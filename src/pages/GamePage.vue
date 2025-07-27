@@ -22,39 +22,17 @@
         </div>
       </div>
       <div class="row q-gutter-md items-start">
-        <q-card>
-          <q-card-section>
-            <div class="text-h6">Player {{ selectedPlayer + 1 }}'s Hand</div>
-            <div class="row q-gutter-sm">
-              <WireCard
-                v-for="card in players[selectedPlayer] ? players[selectedPlayer].hand : []"
-                :key="card.id"
-                :card="card"
-                :revealed="true"
-                size="normal"
-              />
-            </div>
-          </q-card-section>
-        </q-card>
+        <player-deck :player="players[selectedPlayer]" revealed />
         <div class="q-mt-lg">
           <div class="text-h6">Other Players</div>
           <div class="row q-gutter-md">
-            <div v-for="player in otherPlayers" :key="player.id">
-              <q-card>
-                <q-card-section>
-                  <div class="text-subtitle2">{{ player.name }}</div>
-                  <div class="row q-gutter-xs">
-                    <WireCard
-                      v-for="card in player.hand"
-                      :key="card.id"
-                      :card="card"
-                      :revealed="card.revealed"
-                      size="small"
-                    />
-                  </div>
-                </q-card-section>
-              </q-card>
-            </div>
+            <player-deck
+              v-for="player in otherPlayers"
+              :key="player.id"
+              :player="player"
+              :size="'small'"
+              :revealed="false"
+            />
           </div>
         </div>
       </div>
@@ -66,13 +44,24 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGameStateManager } from '../composables/managers/GameStateManager.js'
-import WireCard from '../components/WireCard.vue'
+
+import PlayerDeck from '../components/PlayerDeck.vue'
 
 const { state, createNewGame } = useGameStateManager()
 
 const players = computed(() => state.players)
 const selectedPlayer = ref(0)
-const otherPlayers = computed(() => players.value.filter((_, idx) => idx !== selectedPlayer.value))
+const otherPlayers = computed(() => {
+  const arr = players.value
+  const n = arr.length
+  if (n <= 1) return []
+  // Start after selectedPlayer, wrap around, skip selectedPlayer
+  const result = []
+  for (let i = 1; i < n; i++) {
+    result.push(arr[(selectedPlayer.value + i) % n])
+  }
+  return result
+})
 const initialized = computed(
   () =>
     players.value.length > 0 &&
