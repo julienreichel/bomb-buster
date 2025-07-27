@@ -5,6 +5,11 @@
       <div class="q-ml-md">Initializing game state...</div>
     </div>
     <div v-else>
+      <wire-tracker
+        :wires="state.wires"
+        :yellow-wires="state.yellowWires"
+        :red-wires="state.redWires"
+      />
       <div class="q-mb-md row items-center q-gutter-md">
         <div class="text-h6 q-mr-md">Players:</div>
         <div class="row q-gutter-sm">
@@ -46,6 +51,7 @@ import { useRoute } from 'vue-router'
 import { useGameStateManager } from '../composables/managers/GameStateManager.js'
 
 import PlayerDeck from '../components/PlayerDeck.vue'
+import WireTracker from '../components/WireTracker.vue'
 
 const { state, createNewGame } = useGameStateManager()
 
