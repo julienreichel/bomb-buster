@@ -1,7 +1,7 @@
 // GameStateManager composable
 import { reactive } from 'vue'
 import GameState from '../models/GameState.js'
-import Player from '../models/Player.js'
+import { HumanPlayer, AIPlayer } from '../models/Player.js'
 import WireTile from '../models/WireTile.js'
 
 let gameStateInstance
@@ -18,19 +18,28 @@ export function useGameStateManager() {
     red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
   }) {
     if (numPlayers < 3 || numPlayers > 5) {
-      throw new Error('Number of players must be between 3 and 5.');
+      throw new Error('Number of players must be between 3 and 5.')
     }
     // Create players
     const players = []
     for (let i = 0; i < numPlayers; i++) {
-      players.push(
-        new Player({
-          id: i,
-          name: hasHuman && i === 0 ? 'Human' : `AI ${i + 1}`,
-          isAI: !(hasHuman && i === 0),
-          hand: [],
-        }),
-      )
+      if (hasHuman && i === 0) {
+        players.push(
+          new HumanPlayer({
+            id: i,
+            name: 'Human',
+            hand: [],
+          }),
+        )
+      } else {
+        players.push(
+          new AIPlayer({
+            id: i,
+            name: `AI ${i + 1}`,
+            hand: [],
+          }),
+        )
+      }
     }
 
     // Create blue wires (4 of each number 1-12)
