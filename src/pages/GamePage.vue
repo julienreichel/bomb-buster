@@ -26,27 +26,13 @@
           <q-card-section>
             <div class="text-h6">Player {{ selectedPlayer + 1 }}'s Hand</div>
             <div class="row q-gutter-sm">
-              <q-card
+              <WireCard
                 v-for="card in players[selectedPlayer] ? players[selectedPlayer].hand : []"
                 :key="card.id"
-                :class="[
-                  'text-white',
-                  card.color === 'blue' ? 'bg-blue' : card.color === 'yellow' ? 'bg-yellow-7' : card.color === 'red' ? 'bg-red' : 'bg-grey-2'
-                ]"
-                style="min-width: 80px; max-width: 100px"
-              >
-                <q-card-section class="text-center">
-                  <div class="text-subtitle2">{{ card.number }}</div>
-                  <q-badge v-if="card.infoToken" color="info" class="q-mt-sm">
-                    <template v-if="card.color === 'blue'">{{ card.number }}</template>
-                    <template v-else>{{ card.color }}</template>
-                  </q-badge>
-                  <div class="q-mt-xs text-caption text-grey">
-                    revealed: {{ card.revealed ? 'true' : 'false' }}, infoToken:
-                    {{ card.infoToken ? 'true' : 'false' }}
-                  </div>
-                </q-card-section>
-              </q-card>
+                :card="card"
+                :revealed="true"
+                size="normal"
+              />
             </div>
           </q-card-section>
         </q-card>
@@ -58,35 +44,13 @@
                 <q-card-section>
                   <div class="text-subtitle2">{{ player.name }}</div>
                   <div class="row q-gutter-xs">
-                    <q-card
+                    <WireCard
                       v-for="card in player.hand"
                       :key="card.id"
-                      :class="[
-                        card.revealed
-                          ? 'text-white ' + (card.color === 'blue' ? 'bg-blue' : card.color === 'yellow' ? 'bg-yellow-7' : card.color === 'red' ? 'bg-red' : 'bg-grey-2')
-                          : 'bg-grey-2 text-black'
-                      ]"
-                      style="min-width: 60px; max-width: 80px"
-                    >
-                      <q-card-section class="text-center">
-                        <template v-if="card.revealed">
-                          <div class="text-subtitle2">{{ card.number }}</div>
-                        </template>
-                        <template v-else-if="card.infoToken">
-                          <q-badge color="info">
-                            <template v-if="card.color === 'blue'">{{ card.number }}</template>
-                            <template v-else>{{ card.color }}</template>
-                          </q-badge>
-                        </template>
-                        <template v-else>
-                          <q-icon name="help_outline" color="grey" />
-                        </template>
-                        <div class="q-mt-xs text-caption text-grey">
-                          revealed: {{ card.revealed ? 'true' : 'false' }}, infoToken:
-                          {{ card.infoToken ? 'true' : 'false' }}
-                        </div>
-                      </q-card-section>
-                    </q-card>
+                      :card="card"
+                      :revealed="card.revealed"
+                      size="small"
+                    />
                   </div>
                 </q-card-section>
               </q-card>
@@ -102,6 +66,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGameStateManager } from '../composables/managers/GameStateManager.js'
+import WireCard from '../components/WireCard.vue'
 
 const { state, createNewGame } = useGameStateManager()
 
