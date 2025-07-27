@@ -20,6 +20,15 @@ describe('useGameStateManager composable', () => {
     expect(gameStateManager.state.wires.filter((w) => w.color === 'blue').length).toBe(48)
   })
 
+  it('should sort each player hand by wire number', () => {
+    gameStateManager.createNewGame({ numPlayers: 4 })
+    for (const player of gameStateManager.state.players) {
+      const numbers = player.hand.map((w) => w.number)
+      const sorted = [...numbers].sort((a, b) => a - b)
+      expect(numbers).toEqual(sorted)
+    }
+  })
+
   it('should create the correct number of yellow and red wires', () => {
     gameStateManager.createNewGame({
       numPlayers: 4,

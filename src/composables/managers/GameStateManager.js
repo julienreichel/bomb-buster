@@ -98,6 +98,10 @@ export function useGameStateManager() {
       players[playerIndex].hand.push(wire)
       playerIndex = (playerIndex + 1) % players.length
     }
+    // Sort each player's hand by wire number
+    for (const player of players) {
+      player.hand.sort((a, b) => a.number - b.number)
+    }
 
     // Reset state
     Object.assign(

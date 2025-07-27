@@ -20,6 +20,7 @@ export class HumanPlayer extends Player {
   async pickCard() {
     // This should be implemented in the UI layer, here we just return null
     return new Promise((resolve) => {
+      resolve(0)
       // UI should call resolve(cardIndex) when user picks
       // When resolved, set infoToken to true
       // Example usage in UI: resolve(cardIndex)
