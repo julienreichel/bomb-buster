@@ -10,7 +10,7 @@
       <q-badge v-if="yellowNumbers.includes(n)" color="yellow-7" text-color="black" rounded>
         {{ showYellowQuestion ? '?' : '|' }}
       </q-badge>
-      <q-badge v-if="redNumbers.includes(n)" color="red" text-color="white" rounded>
+      <q-badge v-if="redNumbers.includes(n)" color="red" text-color="black" rounded>
         {{ showRedQuestion ? '?' : '|' }}
       </q-badge>
     </template>
