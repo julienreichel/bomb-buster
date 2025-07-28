@@ -1,5 +1,5 @@
 <template>
-  <q-card :class="cardClass" :style="cardStyle">
+  <q-card :class="cardClass" :style="cardStyle" @click="onClick" :clickable="selectable">
     <q-card-section class="text-center">
       <template v-if="revealed">
         <div class="text-subtitle2">{{ card.number }}</div>
@@ -27,7 +27,16 @@ const props = defineProps({
   card: { type: Object, required: true },
   revealed: { type: Boolean, default: false },
   size: { type: String, default: 'normal' }, // 'normal' or 'small'
+  selectable: { type: Boolean, default: false },
 })
+
+const emit = defineEmits(['pick'])
+
+function onClick() {
+  if (props.selectable) {
+    emit('pick', props.card)
+  }
+}
 
 const cardClass = computed(() => {
   if (props.revealed) {

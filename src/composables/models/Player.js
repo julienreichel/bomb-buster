@@ -16,25 +16,14 @@ export class HumanPlayer extends Player {
     super(opts)
     this.isAI = false
   }
-  // Wait for user to pick a blue card (UI integration needed)
-  async pickCard() {
-    // This should be implemented in the UI layer, here we just return null
-    return new Promise((resolve) => {
-      resolve(0)
-      // UI should call resolve(cardIndex) when user picks
-      // When resolved, set infoToken to true
-      // Example usage in UI: resolve(cardIndex)
-    }).then((cardIndex) => {
-      if (
-        typeof cardIndex === 'number' &&
-        this.hand[cardIndex] &&
-        this.hand[cardIndex].color === 'blue'
-      ) {
-        this.hand[cardIndex].infoToken = true
-        return cardIndex
-      }
-      return null
-    })
+  // Set infoToken to true for the picked card
+  pickCard(card) {
+    const idx = this.hand.findIndex((c) => c.id === card.id)
+    if (idx !== -1 && this.hand[idx].color === 'blue') {
+      this.hand[idx].infoToken = true
+      return idx
+    }
+    return null
   }
 }
 
@@ -44,7 +33,7 @@ export class AIPlayer extends Player {
     this.isAI = true
   }
   // Pick a blue card at random
-  async pickCard() {
+  pickCard() {
     const blueIndexes = this.hand
       .map((card, idx) => (card.color === 'blue' ? idx : -1))
       .filter((idx) => idx !== -1)

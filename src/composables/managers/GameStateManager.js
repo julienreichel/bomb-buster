@@ -116,13 +116,47 @@ export function useGameStateManager() {
         history: [],
         yellowWires,
         redWires,
+        phase: null,
+        currentPicker: null,
+        pickedCards: [],
       }),
     )
+  }
+  // Start the pick round: set phase and picker, and auto-advance through all players
+  function startPickRound() {
+    gameStateInstance.phase = 'pick-card'
+    gameStateInstance.pickedCards = []
+    advancePickRound()
+  }
+
+  // Advance pick round: AI picks and advances, human waits for UI
+  function advancePickRound() {
+    const players = gameStateInstance.players
+    // If currentPicker is null, start with player 0
+    if (gameStateInstance.currentPicker == null) {
+      gameStateInstance.currentPicker = 0
+    } else {
+      gameStateInstance.currentPicker++
+    }
+    if (gameStateInstance.currentPicker < players.length) {
+      const current = players[gameStateInstance.currentPicker]
+      if (current && current.isAI && current.pickCard) {
+        current.pickCard()
+        advancePickRound()
+      }
+      // If human, UI will prompt for pick
+    } else {
+      // All players picked, switch to play phase
+      gameStateInstance.phase = 'play-phase'
+      gameStateInstance.currentPicker = null
+    }
   }
 
   return {
     state: gameStateInstance,
     createNewGame,
+    startPickRound,
+    advancePickRound,
     // ...other methods
   }
 }

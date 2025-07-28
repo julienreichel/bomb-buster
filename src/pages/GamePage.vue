@@ -30,7 +30,17 @@
         </div>
       </div>
       <div class="row q-gutter-md items-start">
-        <player-deck :player="players[selectedPlayer]" revealed />
+        <div>
+          <player-deck
+            :player="players[selectedPlayer]"
+            revealed
+            :selectable="isHumanTurn"
+            @pick="onHumanPick"
+          />
+          <div v-if="isPickPhase && isHumanTurn" class="q-mb-md text-primary text-h6">
+            Your turn: pick a blue card
+          </div>
+        </div>
         <div class="q-mt-lg">
           <div class="text-h6">Other Players</div>
           <div class="row q-gutter-md">
@@ -57,7 +67,24 @@ import PlayerDeck from '../components/PlayerDeck.vue'
 import WireTracker from '../components/WireTracker.vue'
 import DetonatorDial from '../components/DetonatorDial.vue'
 
-const { state, createNewGame } = useGameStateManager()
+const { state, createNewGame, startPickRound, advancePickRound } = useGameStateManager()
+const isPickPhase = computed(() => state.phase === 'pick-card')
+const isHumanTurn = computed(
+  () =>
+    isPickPhase.value &&
+    state.currentPicker === selectedPlayer.value &&
+    players.value[selectedPlayer.value] &&
+    !players.value[selectedPlayer.value].isAI,
+)
+
+function onHumanPick(card) {
+  const player = players.value[selectedPlayer.value]
+  if (player && player.pickCard) {
+    if (player.pickCard(card)) {
+      advancePickRound()
+    }
+  }
+}
 
 const players = computed(() => state.players)
 const selectedPlayer = ref(0)
@@ -98,6 +125,7 @@ onMounted(() => {
     yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
     red: { created: redCreated.value, onBoard: redOnBoard.value },
   })
+  startPickRound()
   console.log('state:', state)
 })
 </script>

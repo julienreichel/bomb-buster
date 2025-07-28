@@ -65,4 +65,38 @@ describe('useGameStateManager composable', () => {
     expect(() => gameStateManager.createNewGame({ numPlayers: 4 })).not.toThrow()
     expect(() => gameStateManager.createNewGame({ numPlayers: 5 })).not.toThrow()
   })
+  it('startPickRound sets phase and currentPicker, and advances AI picks', () => {
+    gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
+    gameStateManager.startPickRound()
+    // All AI, so should immediately advance to play-phase
+    expect(gameStateManager.state.phase).toBe('play-phase')
+    expect(gameStateManager.state.currentPicker).toBe(null)
+  })
+
+  it('startPickRound waits for human to pick before advancing', () => {
+    gameStateManager.createNewGame({ numPlayers: 3, hasHuman: true })
+    gameStateManager.startPickRound()
+    // Should be in pick-card phase, and currentPicker should be the human
+    expect(gameStateManager.state.phase).toBe('pick-card')
+    const humanIndex = gameStateManager.state.players.findIndex((p) => !p.isAI)
+    expect(gameStateManager.state.currentPicker).toBe(humanIndex)
+    // Simulate human picking a card
+    const human = gameStateManager.state.players[humanIndex]
+    const cardToPick = human.hand.find((card) => card.color === 'blue')
+    gameStateManager.pickCard(cardToPick)
+    // After human picks, should advance to play-phase
+    expect(gameStateManager.state.phase).toBe('play-phase')
+    expect(gameStateManager.state.currentPicker).toBe(null)
+  })
+
+  it('advancePickRound advances to next player and switches to play-phase at end', () => {
+    gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
+    // Manually set up for pick round
+    gameStateManager.state.phase = 'pick-card'
+    gameStateManager.state.currentPicker = 1
+    gameStateManager.advancePickRound()
+    // Should finish with play-phase
+    expect(gameStateManager.state.phase).toBe('play-phase')
+    expect(gameStateManager.state.currentPicker).toBe(null)
+  })
 })

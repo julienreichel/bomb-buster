@@ -4,11 +4,13 @@
       <div class="text-h6">{{ player && player.name ? player.name : 'Player' }}'s Hand</div>
       <div class="row q-gutter-sm">
         <wire-card
-          v-for="card in player && player.hand ? player.hand : []"
+          v-for="card in player.hand"
           :key="card.id"
           :card="card"
           :revealed="revealed ? true : card.revealed"
           :size="size"
+          :selectable="selectable"
+          @pick="$emit('pick', card)"
         />
       </div>
     </q-card-section>
@@ -21,5 +23,6 @@ defineProps({
   player: { type: Object, required: true },
   revealed: { type: Boolean, default: false },
   size: { type: String, default: 'normal' },
+  selectable: { type: Boolean, default: false },
 })
 </script>
