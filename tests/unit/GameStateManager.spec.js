@@ -131,7 +131,7 @@ describe('useGameStateManager composable', () => {
       expect(result.revealed.sort()).toEqual(['rA', 'rB'].sort())
     })
 
-    it('red: player has a red card, cannot pick it, because bluw is not revealed', () => {
+    it('red: player has a red card, cannot pick it, because blue is not revealed', () => {
       // Setup: player 0 has 1 red card, not revealed
       const redA = { id: 'rA', color: 'red', number: 7.5 }
       const blueA = { id: 'bA', color: 'blue', number: 5 }
@@ -142,7 +142,7 @@ describe('useGameStateManager composable', () => {
         sourcePlayerIdx: 0,
         sourceCardId: 'rA',
       })
-      expect(result.outcome).toBe('invalid-pick')
+      expect(result.outcome).toBe('incomplete-pick')
     })
 
     it('blue: player has 4 cards with same value, picks two from self, all are revealed', () => {

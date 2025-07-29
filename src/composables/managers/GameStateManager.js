@@ -16,6 +16,7 @@ export function useGameStateManager() {
     hasHuman = true,
     yellow: { created: yellowCreated = 0, onBoard: yellowOnBoard = 0 } = {},
     red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
+    autoStart = false,
   }) {
     if (numPlayers < 3 || numPlayers > 5) {
       throw new Error('Number of players must be between 3 and 5.')
@@ -119,8 +120,12 @@ export function useGameStateManager() {
         phase: null,
         currentPicker: null,
         pickedCards: [],
+        autoStart,
       }),
     )
+    if (autoStart) {
+      startPickRound()
+    }
   }
   // Start the pick round: set phase and picker, and auto-advance through all players
   function startPickRound() {
@@ -138,6 +143,7 @@ export function useGameStateManager() {
     } else {
       gameStateInstance.currentPicker++
     }
+    console.log('Current picker:', gameStateInstance.currentPicker)
     if (gameStateInstance.currentPicker < players.length) {
       const current = players[gameStateInstance.currentPicker]
       if (current && current.isAI && current.pickCard) {
@@ -149,6 +155,9 @@ export function useGameStateManager() {
       // All players picked, switch to play phase
       gameStateInstance.phase = 'play-phase'
       gameStateInstance.currentPicker = null
+      if (gameStateInstance.autoStart) {
+        advancePlayRound()
+      }
     }
   }
 
@@ -179,6 +188,7 @@ export function useGameStateManager() {
       if (gameStateInstance.currentPicker === players.length) {
         gameStateInstance.currentPicker = 0
       }
+      console.log('Current play picker:', gameStateInstance.currentPicker)
       const current = players[gameStateInstance.currentPicker]
       if (current.hand.every((card) => card.revealed)) {
         continue
@@ -190,6 +200,7 @@ export function useGameStateManager() {
         continue
       } else {
         // Human: wait for manual pick
+        console.log('Waiting for human player to pick cards...')
         return
       }
     }
@@ -210,9 +221,9 @@ export function useGameStateManager() {
    * @returns {Object} result { outcome, detonatorDial, revealed, infoToken }
    */
   function playRound({ sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId }) {
-    function invalidPick() {
+    function invalidPick(outcome = 'invalid-pick') {
       return {
-        outcome: 'invalid-pick',
+        outcome,
         detonatorDial: gameStateInstance.detonatorDial,
         revealed: [],
         infoToken: false,
@@ -254,7 +265,7 @@ export function useGameStateManager() {
     }
 
     if (targetPlayerIdx == null) {
-      return invalidPick()
+      return invalidPick('incomplete-pick')
     }
     const targetPlayer = players[targetPlayerIdx]
     if (!targetPlayer) {
@@ -267,6 +278,9 @@ export function useGameStateManager() {
     if (targetCard.revealed) {
       return invalidPick()
     }
+    console.log(
+      `Playing round: sourcePlayerIdx=${sourcePlayerIdx}, sourceCardId=${sourceCardId}, targetPlayerIdx=${targetPlayerIdx}, targetCardId=${targetCardId}`,
+    )
 
     let outcome = ''
     let revealed = []

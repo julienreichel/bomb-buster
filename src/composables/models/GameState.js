@@ -11,6 +11,7 @@ export default class GameState {
     history = [],
     yellowWires = [],
     redWires = [],
+    autoStart = false,
   }) {
     this.players = players // Array of Player
     this.wires = wires // Array of WireTile
@@ -21,5 +22,6 @@ export default class GameState {
     this.history = history
     this.yellowWires = yellowWires
     this.redWires = redWires
+    this.autoStart = autoStart
   }
 }

@@ -7,7 +7,7 @@
           v-for="card in player.hand"
           :key="card.id"
           :card="card"
-          :revealed="revealed ? true : card.revealed"
+          :visible="visible"
           :size="size"
           :selectable="selectable"
           @pick="$emit('pick', card)"
@@ -21,7 +21,7 @@
 import WireCard from './WireCard.vue'
 defineProps({
   player: { type: Object, required: true },
-  revealed: { type: Boolean, default: false },
+  visible: { type: Boolean, default: false },
   size: { type: String, default: 'normal' },
   selectable: { type: Boolean, default: false },
 })

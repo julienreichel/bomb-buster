@@ -33,12 +33,13 @@
         <div>
           <player-deck
             :player="players[selectedPlayer]"
-            revealed
+            visible
             :selectable="isHumanTurn"
-            @pick="onHumanPick"
+            @pick="handlePlayerDeckPick"
           />
-          <div v-if="isPickPhase && isHumanTurn" class="q-mb-md text-primary text-h6">
-            Your turn: pick a blue card
+
+          <div v-if="isHumanTurn && playMessage" class="q-mb-md text-primary text-h6">
+            {{ playMessage }}
           </div>
         </div>
         <div class="q-mt-lg">
@@ -49,7 +50,9 @@
               :key="player.id"
               :player="player"
               :size="'small'"
-              :revealed="false"
+              :visible="false"
+              :selectable="isPlayPhase && isHumanTurn && !!playSelection.sourceCard"
+              @pick="(card) => onHumanPlayPick(card, player.id)"
             />
           </div>
         </div>
@@ -67,23 +70,95 @@ import PlayerDeck from '../components/PlayerDeck.vue'
 import WireTracker from '../components/WireTracker.vue'
 import DetonatorDial from '../components/DetonatorDial.vue'
 
-const { state, createNewGame, startPickRound, advancePickRound } = useGameStateManager()
+const { state, createNewGame, advancePickRound, advancePlayRound, playRound } =
+  useGameStateManager()
 const isPickPhase = computed(() => state.phase === 'pick-card')
+const isPlayPhase = computed(() => state.phase === 'play-phase')
 const isHumanTurn = computed(
   () =>
-    isPickPhase.value &&
+    (isPickPhase.value || isPlayPhase.value) &&
     state.currentPicker === selectedPlayer.value &&
     players.value[selectedPlayer.value] &&
     !players.value[selectedPlayer.value].isAI,
 )
 
+const playSelection = ref({ sourceCard: null, targetCard: null })
+
+const playMessage = computed(() => {
+  if (!isHumanTurn.value) return ''
+  if (isPickPhase.value) return 'Your turn: pick a blue card'
+  if (isPlayPhase.value) {
+    if (!playSelection.value.sourceCard) return 'Your turn: pick a card from your hand'
+    return "Now pick a card from another player's hand or from your own hand"
+  }
+  return ''
+})
+
+function handlePlayerDeckPick(card) {
+  if (!isHumanTurn.value) return
+  if (isPickPhase.value) {
+    onHumanPick(card)
+  } else if (isPlayPhase.value) {
+    onHumanPlayPick(card, selectedPlayer.value)
+  }
+}
 function onHumanPick(card) {
   const player = players.value[selectedPlayer.value]
   if (player && player.pickCard) {
-    if (player.pickCard(card)) {
+    if (player.pickCard(card) !== null) {
       advancePickRound()
     }
   }
+}
+
+function onHumanPlayPick(card, playerId) {
+  if (!isHumanTurn.value) return
+  // Step 1: pick own card
+  if (!playSelection.value.sourceCard) {
+    if (playerId !== players.value[selectedPlayer.value].id) {
+      // Error: must pick from own hand
+      return
+    }
+    // Try as source
+    const result = playRound({
+      sourcePlayerIdx: selectedPlayer.value,
+      sourceCardId: card.id,
+      targetPlayerIdx: null,
+      targetCardId: null,
+    })
+    if (result.outcome === 'invalid-pick') {
+      // Error: invalid pick
+      return
+    }
+    playSelection.value.sourceCard = card
+    card.selected = true
+    return
+  }
+  // Step 2: pick other player's card
+
+  // Find the index of the player with this id
+  const targetIdx = players.value.findIndex((p) => p.id === playerId)
+  if (targetIdx === -1) return
+  // Try as target
+  const result = playRound({
+    sourcePlayerIdx: selectedPlayer.value,
+    sourceCardId: playSelection.value.sourceCard.id,
+    targetPlayerIdx: targetIdx,
+    targetCardId: card.id,
+  })
+  if (result.outcome === 'invalid-pick') {
+    // Error: invalid pick, reset
+    playSelection.value.sourceCard.selected = false
+    playSelection.value.sourceCard = null
+    playSelection.value.targetCard = null
+    return
+  }
+  // Valid play, execute and advance
+  playSelection.value.targetCard = card
+  advancePlayRound()
+  playSelection.value.sourceCard.selected = false
+  playSelection.value.sourceCard = null
+  playSelection.value.targetCard = null
 }
 
 const players = computed(() => state.players)
@@ -124,8 +199,7 @@ onMounted(() => {
     hasHuman: hasHuman.value,
     yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
     red: { created: redCreated.value, onBoard: redOnBoard.value },
+    autoStart: true, // Automatically start the game after setup
   })
-  startPickRound()
-  console.log('state:', state)
 })
 </script>

@@ -2,7 +2,14 @@
   <div class="row items-center q-mb-lg justify-center">
     <template v-for="n in 12" :key="n">
       <q-badge
-        :class="['q-mx-xs', allBlueRevealed[n] ? 'bg-blue text-white' : 'bg-grey-2 text-black']"
+        :class="[
+          'q-mx-xs',
+          allBlueRevealed[n] === 4
+            ? 'bg-blue text-white'
+            : allBlueRevealed[n] === 2
+              ? 'bg-blue-3 text-white'
+              : 'bg-grey-2 text-black',
+        ]"
         rounded
       >
         {{ n }}
@@ -31,7 +38,7 @@ const allBlueRevealed = computed(() => {
   const result = {}
   for (let n = 1; n <= 12; n++) {
     const blue = allBlue.value.filter((w) => w.number === n)
-    result[n] = blue.length === 4 && blue.every((w) => w.revealed)
+    result[n] = blue.filter((w) => w.revealed).length
   }
   return result
 })
