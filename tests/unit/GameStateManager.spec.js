@@ -338,4 +338,105 @@ describe('useGameStateManager composable', () => {
       expect(result.revealed).toEqual(['rB'])
     })
   })
+  describe('advancePlayRound', () => {
+    it('should stop and wait for human pick if a player is human', () => {
+      gameStateManager.createNewGame({ numPlayers: 3, hasHuman: true })
+
+      // Give each player 1 blue card, player 2 gets 2
+      gameStateManager.state.players[0].hand = [{ id: 'b0', color: 'blue', number: 1 }]
+      gameStateManager.state.players[1].hand = [{ id: 'b1', color: 'blue', number: 1 }]
+      gameStateManager.state.players[2].hand = [
+        { id: 'b2', color: 'blue', number: 1 },
+        { id: 'b3', color: 'blue', number: 1 },
+      ]
+
+      gameStateManager.state.players[1].pickPlayCards = () => ({
+        sourcePlayerIdx: 1,
+        sourceCardId: 'b1',
+        targetPlayerIdx: 2,
+        targetCardId: 'b2',
+      })
+      gameStateManager.state.players[2].pickPlayCards = () => ({
+        sourcePlayerIdx: 2,
+        sourceCardId: 'b3',
+        targetPlayerIdx: 0,
+        targetCardId: 'b0',
+      })
+      gameStateManager.state.detonatorDial = 3
+      gameStateManager.phase = 'play-phase'
+
+      gameStateManager.advancePlayRound()
+      // Should be waiting for human pick
+      expect(gameStateManager.state.phase).toBe('play-phase')
+      expect(gameStateManager.state.currentPicker).toBe(0)
+
+      // resume other players
+      gameStateManager.advancePlayRound()
+
+      // All cards should be revealed
+      expect(gameStateManager.state.players.every((p) => p.hand.every((c) => c.revealed))).toBe(
+        true,
+      )
+      expect(gameStateManager.state.phase).toBe('game-over')
+    })
+    it('should advance through AI players and end game when all cards are revealed', () => {
+      gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
+      // Player 0: 1 blue card, Player 1: 1 blue card, Player 2: 2 blue cards
+      gameStateManager.state.players[0].hand = [{ id: 'b0', color: 'blue', number: 1 }]
+      gameStateManager.state.players[1].hand = [{ id: 'b1', color: 'blue', number: 1 }]
+      gameStateManager.state.players[2].hand = [
+        { id: 'b2', color: 'blue', number: 1 },
+        { id: 'b3', color: 'blue', number: 1 },
+      ]
+      gameStateManager.state.detonatorDial = 3
+      // Player 0 picks b2 from Player 2, Player 1 picks b3 from Player 2
+      gameStateManager.state.players[0].pickPlayCards = () => ({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'b0',
+        targetPlayerIdx: 2,
+        targetCardId: 'b2',
+      })
+      gameStateManager.state.players[1].pickPlayCards = () => ({
+        sourcePlayerIdx: 1,
+        sourceCardId: 'b1',
+        targetPlayerIdx: 2,
+        targetCardId: 'b3',
+      })
+      // Player 2 will never pick (game ends before their turn)
+      gameStateManager.state.players[2].pickPlayCards = () => null
+      gameStateManager.advancePlayRound()
+      // All cards should be revealed
+      expect(gameStateManager.state.players.every((p) => p.hand.every((c) => c.revealed))).toBe(
+        true,
+      )
+      expect(gameStateManager.state.phase).toBe('game-over')
+    })
+
+    it('should end game if detonatorDial reaches 0', () => {
+      gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
+      // Give each player 1 blue card and 1 red card
+      gameStateManager.state.players.forEach((p, i) => {
+        p.hand = [
+          { id: `b${i}`, color: 'blue', number: 1 },
+          { id: `r${i}`, color: 'red', number: 7.5 },
+        ]
+      })
+      gameStateManager.state.detonatorDial = 1
+      // AI always picks blue vs red (causes detonatorDial to hit 0)
+      gameStateManager.state.players.forEach((p, i) => {
+        p.pickPlayCards = () => {
+          const next = (i + 1) % 3
+          return {
+            sourcePlayerIdx: i,
+            sourceCardId: `b${i}`,
+            targetPlayerIdx: next,
+            targetCardId: `r${next}`,
+          }
+        }
+      })
+      gameStateManager.advancePlayRound()
+      expect(gameStateManager.state.detonatorDial).toBe(0)
+      expect(gameStateManager.state.phase).toBe('game-over')
+    })
+  })
 })

@@ -152,6 +152,49 @@ export function useGameStateManager() {
     }
   }
 
+  // Advance play round: AI picks and advances, human waits for UI
+  function advancePlayRound() {
+    const players = gameStateInstance.players
+    function allCardsRevealed() {
+      return players.every((player) => player.hand.every((card) => card.revealed))
+    }
+    // If currentPicker is null, start with player 0
+    if (gameStateInstance.currentPicker == null) {
+      gameStateInstance.currentPicker = -1
+    }
+    while (true) {
+      // End game if detonatorDial is 0
+      if (gameStateInstance.detonatorDial === 0) {
+        gameStateInstance.phase = 'game-over'
+        gameStateInstance.currentPicker = null
+        return
+      }
+      // End game if all cards are revealed
+      if (allCardsRevealed()) {
+        gameStateInstance.phase = 'game-over'
+        gameStateInstance.currentPicker = null
+        return
+      }
+      gameStateInstance.currentPicker++
+      if (gameStateInstance.currentPicker === players.length) {
+        gameStateInstance.currentPicker = 0
+      }
+      const current = players[gameStateInstance.currentPicker]
+      if (current.hand.every((card) => card.revealed)) {
+        continue
+      }
+      if (current && current.isAI && typeof current.pickPlayCards === 'function') {
+        // AI picks two cards (assume always valid)
+        const pick = current.pickPlayCards(gameStateInstance)
+        playRound(pick)
+        continue
+      } else {
+        // Human: wait for manual pick
+        return
+      }
+    }
+  }
+
   /**
    * Play round logic: user selects a source card (from their hand, unrevealed), then a target card (from another player's hand, unrevealed).
    * Applies the following rules:
@@ -330,6 +373,7 @@ export function useGameStateManager() {
     createNewGame,
     startPickRound,
     advancePickRound,
+    advancePlayRound,
     playRound,
     // ...other methods
   }
