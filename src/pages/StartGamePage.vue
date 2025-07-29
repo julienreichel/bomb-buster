@@ -23,6 +23,7 @@
             label="Number of Yellow Wires (created)"
             :min="0"
             :max="11"
+            :rules="[(val) => val !== 1 || 'Cannot be 1']"
             @update:model-value="onYellowCreatedChange"
           />
           <q-input
@@ -31,6 +32,8 @@
             label="Number of Yellow Wires (on board)"
             :min="0"
             :max="yellowCreated"
+            :rules="[(val) => val % 2 === 0 || 'Must be even']"
+            @update:model-value="onYellowOnBoardChange"
           />
         </div>
         <div class="q-mt-md">
@@ -74,8 +77,22 @@ const redOnBoard = ref(0)
 const router = useRouter()
 
 function onYellowCreatedChange(val) {
+  if (val === 1) {
+    yellowCreated.value = 2 // auto-correct to 2 if user tries 1
+    if (yellowOnBoard.value > 2) yellowOnBoard.value = 2
+    if (yellowOnBoard.value % 2 !== 0) yellowOnBoard.value = 2
+    return
+  }
   if (yellowOnBoard.value > val) yellowOnBoard.value = val
-  if (yellowOnBoard.value === 0 && val > 0) yellowOnBoard.value = val
+  if (yellowOnBoard.value === 0 && val > 0) yellowOnBoard.value = val - (val % 2)
+  if (yellowOnBoard.value % 2 !== 0) yellowOnBoard.value--
+}
+
+function onYellowOnBoardChange(val) {
+  // Always keep even
+  if (val % 2 !== 0) {
+    yellowOnBoard.value = val - 1
+  }
 }
 function onRedCreatedChange(val) {
   if (redOnBoard.value > val) redOnBoard.value = val
@@ -87,7 +104,9 @@ const canStart = computed(
     numPlayers.value >= 3 &&
     numPlayers.value <= 5 &&
     yellowOnBoard.value <= yellowCreated.value &&
-    redOnBoard.value <= redCreated.value,
+    redOnBoard.value <= redCreated.value &&
+    yellowOnBoard.value % 2 === 0 &&
+    yellowCreated.value !== 1,
 )
 
 function startGame() {
