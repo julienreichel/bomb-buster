@@ -36,8 +36,13 @@ describe('useGameStateManager composable', () => {
       red: { created: 3, onBoard: 1 },
     })
     // Only onBoard yellow/red wires are distributed
-    expect(gameStateManager.state.wires.filter((w) => w.color === 'yellow').length).toBe(2)
-    expect(gameStateManager.state.wires.filter((w) => w.color === 'red').length).toBe(1)
+    expect(
+      gameStateManager.state.players.flatMap((p) => p.hand).filter((w) => w.color === 'yellow')
+        .length,
+    ).toBe(2)
+    expect(
+      gameStateManager.state.players.flatMap((p) => p.hand).filter((w) => w.color === 'red').length,
+    ).toBe(1)
     // All yellowWires and redWires are tracked
     expect(gameStateManager.state.yellowWires.length).toBe(4)
     expect(gameStateManager.state.redWires.length).toBe(3)

@@ -84,18 +84,19 @@ export function useGameStateManager() {
         }),
       )
     }
+    const allWires = [...blueWires, ...yellowWires, ...redWires]
 
     // Select yellow/red wires to be on the board
     const yellowOnBoardWires = yellowWires.slice(0, yellowOnBoard)
     const redOnBoardWires = redWires.slice(0, redOnBoard)
     // Remove yellow/red wires not on board
-    let allWires = [...blueWires, ...yellowOnBoardWires, ...redOnBoardWires]
+    let allWiresOnBoard = [...blueWires, ...yellowOnBoardWires, ...redOnBoardWires]
     // Shuffle again for distribution
-    allWires = allWires.sort(() => Math.random() - 0.5)
+    allWiresOnBoard = allWiresOnBoard.sort(() => Math.random() - 0.5)
 
     // Distribute wires to players
     let playerIndex = 0
-    for (const wire of allWires) {
+    for (const wire of allWiresOnBoard) {
       players[playerIndex].hand.push(wire)
       playerIndex = (playerIndex + 1) % players.length
     }
