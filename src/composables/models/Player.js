@@ -45,35 +45,58 @@ export class AIPlayer extends Player {
 
   // AI logic for picking two cards for play round
   pickPlayCards(gameState) {
-    // 0. If all unrevealed cards are red, pick the first red card (no second card)
     const unrevealed = this.hand.filter((c) => !c.revealed)
-    if (unrevealed.length > 0 && unrevealed.every((c) => c.color === 'red')) {
-      return {
-        sourcePlayerIdx: this.id,
-        sourceCardId: unrevealed[0].id,
-        targetPlayerIdx: null,
-        targetCardId: null,
-      }
+    if (this._allUnrevealedRed(unrevealed)) return this._pickFirstRed(unrevealed)
+    const valueGroups = this._groupByValue(unrevealed)
+    const four = this._pickFourOfAKind(valueGroups)
+    if (four) return four
+    const two = this._pickTwoOfAKind(valueGroups, gameState)
+    if (two) return two
+    const infoToken = this._pickInfoToken(unrevealed, gameState)
+    if (infoToken) return infoToken
+    const best = this._pickBestProbability(gameState)
+    if (best) return best
+    return null
+  }
+
+  _allUnrevealedRed(unrevealed) {
+    return unrevealed.length > 0 && unrevealed.every((c) => c.color === 'red')
+  }
+
+  _pickFirstRed(unrevealed) {
+    return {
+      sourcePlayerIdx: this.id,
+      sourceCardId: unrevealed[0].id,
+      targetPlayerIdx: null,
+      targetCardId: null,
     }
-    const valueGroups = unrevealed.reduce((acc, card) => {
+  }
+
+  _groupByValue(unrevealed) {
+    return unrevealed.reduce((acc, card) => {
       const number = card.color === 'blue' ? card.number : card.color
       acc[number] = acc[number] || []
       acc[number].push(card)
       return acc
     }, {})
-    const fourOfAKind = Object.values(valueGroups).find((group) => group.length === 4)
-    if (fourOfAKind) {
+  }
+
+  _pickFourOfAKind(valueGroups) {
+    const group = Object.values(valueGroups).find((g) => g.length === 4)
+    if (group) {
       return {
         sourcePlayerIdx: this.id,
-        sourceCardId: fourOfAKind[0].id,
+        sourceCardId: group[0].id,
         targetPlayerIdx: this.id,
-        targetCardId: fourOfAKind[1].id,
+        targetCardId: group[1].id,
       }
     }
-    // 2. If player has 2 cards with same value (and all other cards of that value in all players are revealed), pick the 2 cards
-    const twoOfAKindNum = Object.keys(valueGroups).find((num) => {
+    return null
+  }
+
+  _pickTwoOfAKind(valueGroups, gameState) {
+    const num = Object.keys(valueGroups).find((num) => {
       if (valueGroups[num].length !== 2) return false
-      // Check if all other cards with this value in all players are revealed
       return gameState.players.every((p) =>
         p.hand.every(
           (card) =>
@@ -84,16 +107,19 @@ export class AIPlayer extends Player {
         ),
       )
     })
-    if (twoOfAKindNum) {
+    if (num) {
       return {
         sourcePlayerIdx: this.id,
-        sourceCardId: valueGroups[twoOfAKindNum][0].id,
+        sourceCardId: valueGroups[num][0].id,
         targetPlayerIdx: this.id,
-        targetCardId: valueGroups[twoOfAKindNum][1].id,
+        targetCardId: valueGroups[num][1].id,
       }
     }
-    // 3. For each unrevealed card in current player, if there is a card with same value (unrevealed, infoToken true) in another player
-    const infoTokenPick = unrevealed
+    return null
+  }
+
+  _pickInfoToken(unrevealed, gameState) {
+    return unrevealed
       .map((myCard) => {
         const found = gameState.players
           .filter((p) => p.id !== this.id)
@@ -113,40 +139,33 @@ export class AIPlayer extends Player {
         return null
       })
       .find(Boolean)
-    if (infoTokenPick) return infoTokenPick
-    // --- Improved logic: find the card with the highest probability match in other players ---
+  }
+
+  _pickBestProbability(gameState) {
     let best = null
     let bestProb = 0
-
-    // For each other player
-    for (const other of gameState.players) {
-      if (other.id === this.id) continue
-      for (let idx = 0; idx < other.hand.length; ++idx) {
-        const card = other.hand[idx]
-        if (card.revealed) continue
-        // Compute candidates for this slot from AI's perspective
-        const candidates = gameState.candidatesForSlot(other, idx, this)
-        if (!candidates || !candidates.mostProbable) continue
-        // Only consider if the most probable value matches a card in AI's hand
-        const myMatch = this.hand.find(
-          (myCard) =>
-            !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
-        )
-        if (myMatch && candidates.mostProbable.probability > bestProb) {
-          bestProb = candidates.mostProbable.probability
-          best = {
-            sourcePlayerIdx: this.id,
-            sourceCardId: myMatch.id,
-            targetPlayerIdx: other.id,
-            targetCardId: card.id,
+    gameState.players
+      .filter((other) => other.id !== this.id)
+      .forEach((other) => {
+        other.hand.forEach((card, idx) => {
+          if (card.revealed) return
+          const candidates = gameState.candidatesForSlot(other, idx, this)
+          if (!candidates || !candidates.mostProbable) return
+          const myMatch = this.hand.find(
+            (myCard) =>
+              !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
+          )
+          if (myMatch && candidates.mostProbable.probability > bestProb) {
+            bestProb = candidates.mostProbable.probability
+            best = {
+              sourcePlayerIdx: this.id,
+              sourceCardId: myMatch.id,
+              targetPlayerIdx: other.id,
+              targetCardId: card.id,
+            }
           }
-        }
-      }
-    }
-    if (best) {
-      return best
-    }
-    // If no valid pick, return null
-    return null
+        })
+      })
+    return best
   }
 }
