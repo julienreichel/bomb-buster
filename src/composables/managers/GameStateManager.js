@@ -199,7 +199,6 @@ export function useGameStateManager() {
         continue
       } else {
         // Human: wait for manual pick
-        console.log('Waiting for human player to pick cards...')
         return
       }
     }

@@ -26,28 +26,94 @@ export default class GameState {
   }
   // --- Wire deduction helpers ---
 
-  // Helper: get the nearest known wire number to the left of idx, or 1 if not found
-  static nearestKnownLeft(player, idx) {
+  // Helper: get the nearest known wire number to the left of idx, or the lowest possible value given remaining cards
+  static nearestKnownLeft(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
+    // Find the nearest revealed/infoToken card to the left
+    let leftIdx = -1
+    let leftValue = 1
     for (let i = idx; i >= 0; --i) {
       const c = player.hand[i]
-      if (c.revealed || c.infoToken) return c.number
+      if (c.revealed || c.infoToken) {
+        leftIdx = i
+        leftValue = c.number
+        break
+      }
     }
-    return 1
+    // If no deduction info, fallback to previous logic
+    if (leftIdx === idx || !blueCounts) return leftValue
+
+    // Build a pool of available cards (blue and red)
+    let candidates = []
+    for (let k = leftValue; k <= 12; ++k) {
+      for (let j = 4 - (blueCounts[k] || 0); j > 0; j--) {
+        candidates.push({ num: k })
+      }
+    }
+    // Add yellow and red wires
+    yellowWires?.forEach((w) => {
+      if (!w.revealed && w.number >= leftValue) {
+        candidates.push({ num: w.number })
+      }
+    })
+    redWires?.forEach((w) => {
+      if (!w.revealed && w.number >= leftValue) {
+        candidates.push({ num: w.number })
+      }
+    })
+    // Sort by number ascending
+    candidates.sort((a, b) => a.num - b.num)
+
+    // Number of slots to fill
+    const slot = idx - leftIdx - 1
+    return candidates[slot].num
   }
 
-  // Helper: get the nearest known wire number to the right of idx, or 12 if not found
-  static nearestKnownRight(player, idx) {
+  // Helper: get the nearest known wire number to the right of idx, or the highest possible value given remaining cards
+  static nearestKnownRight(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
+    // Find the nearest revealed/infoToken card to the right
+    let rightIdx = player.hand.length
+    let rightValue = 12
     for (let i = idx; i < player.hand.length; ++i) {
       const c = player.hand[i]
-      if (c.revealed || c.infoToken) return c.number
+      if (c.revealed || c.infoToken) {
+        rightIdx = i
+        rightValue = c.number
+        break
+      }
     }
-    return 12
+
+    // If no deduction info, fallback to previous logic
+    if (rightIdx === idx || !blueCounts) return rightValue
+
+    // Build a pool of available cards (blue and red)
+    let candidates = []
+    for (let k = rightValue; k >= 1; --k) {
+      for (let j = 4 - (blueCounts[k] || 0); j > 0; j--) {
+        candidates.push({ num: k })
+      }
+    }
+    // Add yellow and red wires
+    yellowWires?.forEach((w) => {
+      if (!w.revealed && w.number <= rightValue) {
+        candidates.push({ num: w.number })
+      }
+    })
+    redWires?.forEach((w) => {
+      if (!w.revealed && w.number <= rightValue) {
+        candidates.push({ num: w.number })
+      }
+    })
+    // Sort by number descending
+    candidates.sort((a, b) => b.num - a.num)
+    // Number of slots to fill
+    const slot = rightIdx - idx - 1
+    return candidates[slot].num
   }
 
-  // INTERVAL_FOR_SLOT: returns [L_rank, U_rank] for a slot
-  static intervalForSlot(player, idx) {
-    const L = GameState.nearestKnownLeft(player, idx)
-    const U = GameState.nearestKnownRight(player, idx)
+  // INTERVAL_FOR_SLOT: returns [L_rank, U_rank] for a slot, optionally with deduction info
+  static intervalForSlot(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
+    const L = GameState.nearestKnownLeft(player, idx, blueCounts, yellowWires, redWires)
+    const U = GameState.nearestKnownRight(player, idx, blueCounts, yellowWires, redWires)
     return [L, U]
   }
 
@@ -62,9 +128,6 @@ export default class GameState {
    * @param {Object} [currentPlayer] - If provided, all cards of this player are considered visible
    */
   candidatesForSlot(player, idx, currentPlayer = null) {
-    const [L, U] = GameState.intervalForSlot(player, idx)
-    const S = new Set()
-
     // Build a set of card ids for currentPlayer if provided
     const currentPlayerCardIds = currentPlayer ? new Set(currentPlayer.hand.map((c) => c.id)) : null
 
@@ -85,6 +148,16 @@ export default class GameState {
     const blueMax = 4
     const yellowMax = allCardsInHands.filter((c) => c.color === 'yellow').length
     const redMax = allCardsInHands.filter((c) => c.color === 'red').length
+
+    // Use deduction-aware interval
+    const [L, U] = GameState.intervalForSlot(
+      player,
+      idx,
+      blueCounts,
+      yellowCount < yellowMax ? this.yellowWires : null,
+      redCount < redMax ? this.redWires : null,
+    )
+    const S = new Set()
 
     // Track possible wires and their counts for probability
     const wireCounts = {}

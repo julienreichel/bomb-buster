@@ -22,8 +22,8 @@ describe('Player composable', () => {
         id: 1,
         name: 'AI',
         hand: [
-          { id: 'b1', color: 'blue', infoToken: false },
-          { id: 'r1', color: 'red', infoToken: false },
+          { id: 'b1', color: 'blue', number: 1, infoToken: false },
+          { id: 'r1', color: 'red', number: 1.5, infoToken: false },
         ],
       })
       const gs = new GameState({ players: [ai], yellowWires: [], redWires: [] })

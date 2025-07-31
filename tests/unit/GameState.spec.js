@@ -2,32 +2,86 @@ import { describe, it, expect } from 'vitest'
 import GameState from '../../src/composables/models/GameState.js'
 
 describe('GameState composable', () => {
-  it('nearestKnownLeft and nearestKnownRight work as expected', () => {
-    const player = {
-      hand: [
-        { id: 1, color: 'blue', number: 2 },
-        { id: 2, color: 'yellow', number: 3 },
-        { id: 3, color: 'blue', number: 4, revealed: true },
-        { id: 4, color: 'red', number: 5 },
-        { id: 5, color: 'blue', number: 6, infoToken: true },
-        { id: 6, color: 'yellow', number: 7 },
-      ],
-    }
-    // idx 0: no known left, should return 1
-    expect(GameState.nearestKnownLeft(player, 0)).toBe(1)
-    // idx 2: current is known
-    expect(GameState.nearestKnownLeft(player, 2)).toBe(4)
-    // idx 3: left is idx 2 (revealed: 4)
-    expect(GameState.nearestKnownLeft(player, 3)).toBe(4)
-    // idx 5: left is idx 4 (infoToken: 6)
-    expect(GameState.nearestKnownLeft(player, 5)).toBe(6)
+  describe('nearestKnownLeft, nearestKnownRight', () => {
+    it('nearestKnownLeft and nearestKnownRight work as expected', () => {
+      const player = {
+        hand: [
+          { id: 1, color: 'blue', number: 2 },
+          { id: 2, color: 'yellow', number: 3 },
+          { id: 3, color: 'blue', number: 4, revealed: true },
+          { id: 4, color: 'red', number: 5 },
+          { id: 5, color: 'blue', number: 6, infoToken: true },
+          { id: 6, color: 'yellow', number: 7 },
+        ],
+      }
+      // idx 0: no known left, should return 1
+      expect(GameState.nearestKnownLeft(player, 0)).toBe(1)
+      // idx 2: current is known
+      expect(GameState.nearestKnownLeft(player, 2)).toBe(4)
+      // idx 3: left is idx 2 (revealed: 4)
+      expect(GameState.nearestKnownLeft(player, 3)).toBe(4)
+      // idx 5: left is idx 4 (infoToken: 6)
+      expect(GameState.nearestKnownLeft(player, 5)).toBe(6)
 
-    // idx 0: right is idx 1 (not known), idx 2 (revealed: 4)
-    expect(GameState.nearestKnownRight(player, 0)).toBe(4)
-    // idx 2: current is known
-    expect(GameState.nearestKnownRight(player, 2)).toBe(4)
-    // idx 5: no right, should return 12
-    expect(GameState.nearestKnownRight(player, 5)).toBe(12)
+      // idx 0: right is idx 1 (not known), idx 2 (revealed: 4)
+      expect(GameState.nearestKnownRight(player, 0)).toBe(4)
+      // idx 2: current is known
+      expect(GameState.nearestKnownRight(player, 2)).toBe(4)
+      // idx 5: no right, should return 12
+      expect(GameState.nearestKnownRight(player, 5)).toBe(12)
+    })
+
+    it('nearestKnownLeft uses the info of blueCounts', () => {
+      const player = {
+        hand: [
+          { id: 1, color: 'blue', number: 2 },
+          { id: 2, color: 'blue', number: 2 },
+          { id: 3, color: 'blue', number: 4, revealed: true },
+        ],
+      }
+      const blueCount = {
+        1: 4,
+        2: 3,
+      }
+      expect(GameState.nearestKnownLeft(player, 0, blueCount)).toBe(2)
+      expect(GameState.nearestKnownLeft(player, 1, blueCount)).toBe(3)
+      expect(GameState.nearestKnownLeft(player, 2, blueCount)).toBe(4)
+    })
+
+    it('nearestKnownLeft uses the info of blueCounts in the middle also', () => {
+      const player = {
+        hand: [
+          { id: 1, color: 'blue', number: 2, revealed: true },
+          { id: 2, color: 'blue', number: 3 },
+          { id: 3, color: 'blue', number: 4 },
+        ],
+      }
+      const blueCount = {
+        1: 0,
+        2: 4,
+        3: 3,
+      }
+      expect(GameState.nearestKnownLeft(player, 0, blueCount)).toBe(2)
+      expect(GameState.nearestKnownLeft(player, 1, blueCount)).toBe(3)
+      expect(GameState.nearestKnownLeft(player, 2, blueCount)).toBe(4)
+    })
+
+    it('nearestKnownRight uses the info of blueCounts', () => {
+      const player = {
+        hand: [
+          { id: 1, color: 'blue', number: 9, revealed: true },
+          { id: 2, color: 'blue', number: 10 },
+          { id: 3, color: 'blue', number: 10 },
+        ],
+      }
+      const blueCount = {
+        12: 4,
+        11: 3,
+      }
+      expect(GameState.nearestKnownRight(player, 0, blueCount)).toBe(9)
+      expect(GameState.nearestKnownRight(player, 1, blueCount)).toBe(10)
+      expect(GameState.nearestKnownRight(player, 2, blueCount)).toBe(11)
+    })
   })
   describe('candidatesForSlot', () => {
     it('blue candidate in open interval', () => {
