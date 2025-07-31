@@ -4,12 +4,13 @@
       <div class="text-h6">{{ player && player.name ? player.name : 'Player' }}'s Hand</div>
       <div class="row q-gutter-sm">
         <wire-card
-          v-for="card in player.hand"
+          v-for="(card, idx) in player.hand"
           :key="card.id"
           :card="card"
           :visible="visible"
           :size="size"
           :selectable="selectable"
+          :candidates="candidates ? candidates[idx] : undefined"
           @pick="$emit('pick', card)"
         />
       </div>
@@ -24,5 +25,6 @@ defineProps({
   visible: { type: Boolean, default: false },
   size: { type: String, default: 'normal' },
   selectable: { type: Boolean, default: false },
+  candidates: { type: Array, default: undefined },
 })
 </script>

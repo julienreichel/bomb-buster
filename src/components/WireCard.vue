@@ -19,6 +19,21 @@
       <template v-else>
         <q-icon name="help_outline" color="grey" />
       </template>
+      <template v-if="candidates">
+        <div class="q-mt-xs text-caption">
+          <span>
+            <template v-for="(val, idx) in Array.from(candidates.possibilities)" :key="val">
+              <span>{{ val }}<span v-if="idx < candidates.possibilities.size - 1">, </span></span>
+            </template>
+          </span>
+        </div>
+        <div class="text-caption">
+          <span v-if="candidates.mostProbable && candidates.possibilities.size > 1">
+            ({{ (candidates.mostProbable.probability * 100).toFixed(1) }}%)
+            {{ candidates.mostProbable.value }}
+          </span>
+        </div>
+      </template>
     </q-card-section>
   </q-card>
 </template>
@@ -30,6 +45,7 @@ const props = defineProps({
   visible: { type: Boolean, default: false },
   size: { type: String, default: 'normal' }, // 'normal' or 'small'
   selectable: { type: Boolean, default: false },
+  candidates: { type: Object, default: undefined },
 })
 
 const emit = defineEmits(['pick'])

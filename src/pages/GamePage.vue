@@ -20,11 +20,11 @@
             v-for="(player, idx) in players"
             :key="player.id"
             :label="player.name"
-            :color="selectedPlayer === idx ? 'primary' : 'grey-4'"
-            :text-color="selectedPlayer === idx ? 'white' : 'black'"
+            :color="selectedPlayerIdx === idx ? 'primary' : 'grey-4'"
+            :text-color="selectedPlayerIdx === idx ? 'white' : 'black'"
             unelevated
             dense
-            @click="selectedPlayer = idx"
+            @click="selectedPlayerIdx = idx"
             class="q-mr-sm"
           />
         </div>
@@ -32,7 +32,7 @@
       <div class="row q-gutter-md items-start">
         <div>
           <player-deck
-            :player="players[selectedPlayer]"
+            :player="players[selectedPlayerIdx]"
             visible
             :selectable="isHumanTurn"
             @pick="handlePlayerDeckPick"
@@ -43,7 +43,10 @@
           </div>
         </div>
         <div class="q-mt-lg">
-          <div class="text-h6">Other Players</div>
+          <div class="row items-center q-gutter-sm q-mb-sm">
+            <div class="text-h6">Other Players</div>
+            <q-toggle v-model="showCandidates" label="Show Candidates" color="primary" dense />
+          </div>
           <div class="row q-gutter-md">
             <player-deck
               v-for="player in otherPlayers"
@@ -52,6 +55,7 @@
               :size="'small'"
               :visible="false"
               :selectable="isPlayPhase && isHumanTurn && !!playSelection.sourceCard"
+              :candidates="showCandidates ? getPlayerCandidates(player) : undefined"
               @pick="(card) => onHumanPlayPick(card, player.id)"
             />
           </div>
@@ -77,9 +81,9 @@ const isPlayPhase = computed(() => state.phase === 'play-phase')
 const isHumanTurn = computed(
   () =>
     (isPickPhase.value || isPlayPhase.value) &&
-    state.currentPicker === selectedPlayer.value &&
-    players.value[selectedPlayer.value] &&
-    !players.value[selectedPlayer.value].isAI,
+    state.currentPicker === selectedPlayerIdx.value &&
+    players.value[selectedPlayerIdx.value] &&
+    !players.value[selectedPlayerIdx.value].isAI,
 )
 
 const playSelection = ref({ sourceCard: null, targetCard: null })
@@ -99,11 +103,11 @@ function handlePlayerDeckPick(card) {
   if (isPickPhase.value) {
     onHumanPick(card)
   } else if (isPlayPhase.value) {
-    onHumanPlayPick(card, selectedPlayer.value)
+    onHumanPlayPick(card, selectedPlayerIdx.value)
   }
 }
 function onHumanPick(card) {
-  const player = players.value[selectedPlayer.value]
+  const player = players.value[selectedPlayerIdx.value]
   if (player && player.pickCard) {
     if (player.pickCard(card) !== null) {
       advancePickRound()
@@ -115,13 +119,13 @@ function onHumanPlayPick(card, playerId) {
   if (!isHumanTurn.value) return
   // Step 1: pick own card
   if (!playSelection.value.sourceCard) {
-    if (playerId !== players.value[selectedPlayer.value].id) {
+    if (playerId !== players.value[selectedPlayerIdx.value].id) {
       // Error: must pick from own hand
       return
     }
     // Try as source
     const result = playRound({
-      sourcePlayerIdx: selectedPlayer.value,
+      sourcePlayerIdx: selectedPlayerIdx.value,
       sourceCardId: card.id,
       targetPlayerIdx: null,
       targetCardId: null,
@@ -141,7 +145,7 @@ function onHumanPlayPick(card, playerId) {
   if (targetIdx === -1) return
   // Try as target
   const result = playRound({
-    sourcePlayerIdx: selectedPlayer.value,
+    sourcePlayerIdx: selectedPlayerIdx.value,
     sourceCardId: playSelection.value.sourceCard.id,
     targetPlayerIdx: targetIdx,
     targetCardId: card.id,
@@ -162,24 +166,33 @@ function onHumanPlayPick(card, playerId) {
 }
 
 const players = computed(() => state.players)
-const selectedPlayer = ref(0)
+const selectedPlayerIdx = ref(0)
+const selectedPlayer = computed(() => players.value[selectedPlayerIdx.value])
 const otherPlayers = computed(() => {
   const arr = players.value
   const n = arr.length
   if (n <= 1) return []
-  // Start after selectedPlayer, wrap around, skip selectedPlayer
+  // Start after selectedPlayerIdx, wrap around, skip selectedPlayerIdx
   const result = []
   for (let i = 1; i < n; i++) {
-    result.push(arr[(selectedPlayer.value + i) % n])
+    result.push(arr[(selectedPlayerIdx.value + i) % n])
   }
   return result
 })
 const initialized = computed(
   () =>
     players.value.length > 0 &&
-    players.value[selectedPlayer.value] &&
-    Array.isArray(players.value[selectedPlayer.value].hand),
+    players.value[selectedPlayerIdx.value] &&
+    Array.isArray(selectedPlayer.value.hand),
 )
+
+const showCandidates = ref(true)
+
+// Compute candidates for each card in a player's hand
+function getPlayerCandidates(player) {
+  if (!state || !state.players) return []
+  return player.hand.map((card, idx) => state.candidatesForSlot(player, idx, selectedPlayer.value))
+}
 
 const route = useRoute()
 const numPlayers = computed(() => parseInt(route.query.numPlayers) || 4)
