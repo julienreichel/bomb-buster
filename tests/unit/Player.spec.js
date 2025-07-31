@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Player, HumanPlayer, AIPlayer } from '../../src/composables/models/Player.js'
+import GameState from '../../src/composables/models/GameState.js'
 
 describe('Player composable', () => {
   it('should create a Player with default values', () => {
@@ -98,8 +99,8 @@ describe('Player composable', () => {
           { id: 'b6', color: 'blue', number: 3 },
         ],
       })
-      const players = [ai]
-      const result = ai.pickPlayCards({ players })
+      const gs = new GameState({ players: [ai] })
+      const result = ai.pickPlayCards(gs)
       expect(result.sourceCardId).toMatch(/^b[1-4]$/)
       expect(result.targetCardId).toMatch(/^b[1-4]$/)
       expect(result.sourceCardId).not.toBe(result.targetCardId)
@@ -123,8 +124,8 @@ describe('Player composable', () => {
         name: 'Other',
         hand: [{ id: 'b7', color: 'blue', number: 7, revealed: true }],
       })
-      const players = [ai, other]
-      const result = ai.pickPlayCards({ players })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
       expect([result.sourceCardId, result.targetCardId]).toContain('b1')
       expect([result.sourceCardId, result.targetCardId]).toContain('b2')
       expect(result.sourcePlayerIdx).toBe(0)
@@ -145,8 +146,8 @@ describe('Player composable', () => {
         ],
       })
       const other = new AIPlayer({ id: 1, name: 'Other', hand: [] })
-      const players = [ai, other]
-      const result = ai.pickPlayCards({ players })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
       expect([result.sourceCardId, result.targetCardId]).toContain('y1')
       expect([result.sourceCardId, result.targetCardId]).toContain('y2')
       expect(result.sourcePlayerIdx).toBe(0)
@@ -166,8 +167,8 @@ describe('Player composable', () => {
           { id: 'b5', color: 'blue', number: 5, revealed: true },
         ],
       })
-      const players = [ai]
-      const result = ai.pickPlayCards({ players })
+      const gs = new GameState({ players: [ai] })
+      const result = ai.pickPlayCards(gs)
       expect(result.sourceCardId).toBe('r1')
       expect(result.sourcePlayerIdx).toBe(0)
     })
@@ -190,11 +191,71 @@ describe('Player composable', () => {
         name: 'Other',
         hand: [{ id: 'b7', color: 'blue', number: 8, infoToken: true }],
       })
-      const players = [ai, other]
-      const result = ai.pickPlayCards({ players })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
       expect(result.sourceCardId).toBe('b1')
       expect(result.targetPlayerIdx).toBe(1)
       expect(result.targetCardId).toBe('b7')
+    })
+
+    it('AIPlayer picks good card if it can be guessed', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2 },
+          { id: 'b3', color: 'blue', number: 3 },
+          { id: 'b4', color: 'blue', number: 7 },
+          { id: 'b5', color: 'blue', number: 8 },
+          { id: 'b6', color: 'blue', number: 10 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b7', color: 'blue', number: 7 },
+          { id: 'b8', color: 'blue', number: 8, revealed: true },
+          { id: 'b9', color: 'blue', number: 8 },
+          { id: 'b10', color: 'blue', number: 8, revealed: true },
+          { id: 'b11', color: 'blue', number: 9 },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
+      expect(result.sourceCardId).toBe('b5')
+      expect(result.targetPlayerIdx).toBe(1)
+      expect(result.targetCardId).toBe('b9')
+    })
+
+    it('AIPlayer picks most probable card', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2 },
+          { id: 'b3', color: 'blue', number: 3 },
+          { id: 'b4', color: 'blue', number: 7 },
+          { id: 'b5', color: 'blue', number: 8 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b6', color: 'blue', number: 6 },
+          { id: 'b7', color: 'blue', number: 7, revealed: true },
+          { id: 'b8', color: 'blue', number: 7, revealed: true },
+          { id: 'b9', color: 'blue', number: 8 },
+          { id: 'b10', color: 'blue', number: 8, revealed: true },
+          { id: 'b11', color: 'blue', number: 9 },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
+      expect(result.sourceCardId).toBe('b5')
+      expect(result.targetPlayerIdx).toBe(1)
+      expect(result.targetCardId).toBe('b9')
     })
   })
 })

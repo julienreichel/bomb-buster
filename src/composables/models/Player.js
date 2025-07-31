@@ -56,8 +56,9 @@ export class AIPlayer extends Player {
       }
     }
     const valueGroups = unrevealed.reduce((acc, card) => {
-      acc[card.number] = acc[card.number] || []
-      acc[card.number].push(card)
+      const number = card.color === 'blue' ? card.number : card.color
+      acc[number] = acc[number] || []
+      acc[number].push(card)
       return acc
     }, {})
     const fourOfAKind = Object.values(valueGroups).find((group) => group.length === 4)
@@ -77,7 +78,8 @@ export class AIPlayer extends Player {
         p.hand.every(
           (card) =>
             (p.id === this.id && valueGroups[num].some((c) => c.id === card.id)) ||
-            card.number != num ||
+            (card.number != num && card.color === 'blue') ||
+            (num === 'yellow' && card.color !== num) ||
             card.revealed,
         ),
       )
@@ -112,35 +114,37 @@ export class AIPlayer extends Player {
       })
       .find(Boolean)
     if (infoTokenPick) return infoTokenPick
-    // 4. Otherwise, pick one card at random, and one card at random in another player
-    if (unrevealed.length > 0) {
-      const myCard = unrevealed[Math.floor(Math.random() * unrevealed.length)]
-      // Find other players with at least one unrevealed card
-      const others = gameState.players.filter(
-        (p) => p.id !== this.id && p.hand.some((c) => !c.revealed),
-      )
-      if (others.length > 0) {
-        const other = others[Math.floor(Math.random() * others.length)]
-        const otherUnrev = other.hand.filter((c) => !c.revealed)
-        if (otherUnrev.length > 0) {
-          const otherCard = otherUnrev[Math.floor(Math.random() * otherUnrev.length)]
-          return {
+    // --- Improved logic: find the card with the highest probability match in other players ---
+    let best = null
+    let bestProb = 0
+
+    // For each other player
+    for (const other of gameState.players) {
+      if (other.id === this.id) continue
+      for (let idx = 0; idx < other.hand.length; ++idx) {
+        const card = other.hand[idx]
+        if (card.revealed) continue
+        // Compute candidates for this slot from AI's perspective
+        const candidates = gameState.candidatesForSlot(other, idx, this)
+        if (!candidates || !candidates.mostProbable) continue
+        // Only consider if the most probable value matches a card in AI's hand
+        const myMatch = this.hand.find(
+          (myCard) =>
+            !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
+        )
+        if (myMatch && candidates.mostProbable.probability > bestProb) {
+          bestProb = candidates.mostProbable.probability
+          best = {
             sourcePlayerIdx: this.id,
-            sourceCardId: myCard.id,
+            sourceCardId: myMatch.id,
             targetPlayerIdx: other.id,
-            targetCardId: otherCard.id,
+            targetCardId: card.id,
           }
         }
       }
-      // Fallback: pick two of own unrevealed if no other options
-      if (unrevealed.length >= 2) {
-        return {
-          sourcePlayerIdx: this.id,
-          sourceCardId: unrevealed[0].id,
-          targetPlayerIdx: this.id,
-          targetCardId: unrevealed[1].id,
-        }
-      }
+    }
+    if (best) {
+      return best
     }
     // If no valid pick, return null
     return null
