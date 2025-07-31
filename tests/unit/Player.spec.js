@@ -257,5 +257,34 @@ describe('Player composable', () => {
       expect(result.targetPlayerIdx).toBe(1)
       expect(result.targetCardId).toBe('b9')
     })
+
+    it('AIPlayer picks a card even is not very likelly', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2 },
+          { id: 'b3', color: 'blue', number: 3 },
+          { id: 'b4', color: 'blue', number: 8 },
+          { id: 'b5', color: 'blue', number: 10 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b6', color: 'blue', number: 6 },
+          { id: 'b8', color: 'blue', number: 7, revealed: true },
+          { id: 'b9', color: 'blue', number: 8 },
+          { id: 'b10', color: 'blue', number: 8, revealed: true },
+          { id: 'b11', color: 'blue', number: 8, revealed: true },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
+      expect(result.sourceCardId).toBe('b4')
+      expect(result.targetPlayerIdx).toBe(1)
+      expect(result.targetCardId).toBe('b9')
+    })
   })
 })

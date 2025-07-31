@@ -144,28 +144,53 @@ export class AIPlayer extends Player {
   _pickBestProbability(gameState) {
     let best = null
     let bestProb = 0
+    let fallback = null
+    let fallbackProb = 0
     gameState.players
       .filter((other) => other.id !== this.id)
       .forEach((other) => {
         other.hand.forEach((card, idx) => {
           if (card.revealed) return
           const candidates = gameState.candidatesForSlot(other, idx, this)
-          if (!candidates || !candidates.mostProbable) return
-          const myMatch = this.hand.find(
-            (myCard) =>
-              !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
-          )
-          if (myMatch && candidates.mostProbable.probability > bestProb) {
-            bestProb = candidates.mostProbable.probability
-            best = {
-              sourcePlayerIdx: this.id,
-              sourceCardId: myMatch.id,
-              targetPlayerIdx: other.id,
-              targetCardId: card.id,
+          if (!candidates || !candidates.possibilities || candidates.possibilities.size === 0)
+            return
+          // First, try to match the most probable
+          if (candidates.mostProbable) {
+            const myMatch = this.hand.find(
+              (myCard) =>
+                !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
+            )
+            if (myMatch && candidates.mostProbable.probability > bestProb) {
+              bestProb = candidates.mostProbable.probability
+              best = {
+                sourcePlayerIdx: this.id,
+                sourceCardId: myMatch.id,
+                targetPlayerIdx: other.id,
+                targetCardId: card.id,
+              }
+            }
+          }
+          // If no bestProb match, look for any match in the set
+          if (!best) {
+            const mySetMatch = this.hand.find(
+              (myCard) => !myCard.revealed && candidates.possibilities.has(myCard.number),
+            )
+            if (mySetMatch) {
+              // Assign probability 1/size of set
+              const prob = 1 / candidates.possibilities.size
+              if (prob > fallbackProb) {
+                fallbackProb = prob
+                fallback = {
+                  sourcePlayerIdx: this.id,
+                  sourceCardId: mySetMatch.id,
+                  targetPlayerIdx: other.id,
+                  targetCardId: card.id,
+                }
+              }
             }
           }
         })
       })
-    return best
+    return best || fallback
   }
 }
