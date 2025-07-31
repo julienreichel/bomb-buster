@@ -147,7 +147,7 @@ export function useGameStateManager() {
     if (gameStateInstance.currentPicker < players.length) {
       const current = players[gameStateInstance.currentPicker]
       if (current && current.isAI && current.pickCard) {
-        current.pickCard()
+        current.pickCard(gameStateInstance)
         advancePickRound()
       }
       // If human, UI will prompt for pick

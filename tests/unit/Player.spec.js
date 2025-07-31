@@ -26,7 +26,8 @@ describe('Player composable', () => {
           { id: 'r1', color: 'red', infoToken: false },
         ],
       })
-      const idx = await ai.pickCard()
+      const gs = new GameState({ players: [ai], yellowWires: [], redWires: [] })
+      const idx = await ai.pickCard(gs)
       expect(idx).toBe(0)
       expect(ai.hand[0].infoToken).toBe(true)
       expect(ai.hand[1].infoToken).toBe(false)
@@ -38,8 +39,48 @@ describe('Player composable', () => {
         name: 'AI',
         hand: [{ id: 'r1', color: 'red', infoToken: false }],
       })
-      const idx = await ai.pickCard()
+      const gs = new GameState({ players: [ai], yellowWires: [], redWires: [] })
+      const idx = await ai.pickCard(gs)
       expect(idx).toBe(null)
+    })
+
+    it('AIPlayer pickCard pick best cards', async () => {
+      const ai = new AIPlayer({
+        id: 1,
+        name: 'AI',
+        hand: [
+          { id: 'b1', color: 'blue', number: 2, infoToken: false },
+          { id: 'b2', color: 'blue', number: 12, infoToken: false },
+          { id: 'b3', color: 'blue', number: 12, infoToken: false },
+        ],
+      })
+      const gs = new GameState({ players: [ai], yellowWires: [], redWires: [] })
+      const idx = await ai.pickCard(gs)
+      expect(idx).toBe(1)
+      expect(ai.hand[0].infoToken).toBe(false)
+      expect(ai.hand[1].infoToken).toBe(true)
+      expect(ai.hand[2].infoToken).toBe(false)
+    })
+
+    it('AIPlayer pickCard pick from tripple if any', async () => {
+      const ai = new AIPlayer({
+        id: 1,
+        name: 'AI',
+        hand: [
+          { id: 'b1', color: 'blue', number: 2, infoToken: false },
+          { id: 'b2', color: 'blue', number: 11, infoToken: false },
+          { id: 'b3', color: 'blue', number: 11, infoToken: false },
+          { id: 'b4', color: 'blue', number: 11, infoToken: false },
+          { id: 'b5', color: 'blue', number: 12, infoToken: false },
+          { id: 'b6', color: 'blue', number: 12, infoToken: false },
+        ],
+      })
+      const gs = new GameState({ players: [ai], yellowWires: [], redWires: [] })
+      const idx = await ai.pickCard(gs)
+      expect(idx).toBe(1)
+      expect(ai.hand[0].infoToken).toBe(false)
+      expect(ai.hand[1].infoToken).toBe(true)
+      expect(ai.hand[4].infoToken).toBe(false)
     })
 
     it('HumanPlayer pickCard sets infoToken on selected blue card', () => {

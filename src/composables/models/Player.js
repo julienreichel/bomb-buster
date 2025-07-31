@@ -32,12 +32,48 @@ export class AIPlayer extends Player {
     super(opts)
     this.isAI = true
   }
-  // Pick a blue card at random
-  pickCard() {
-    const blueIndexes = this.hand
+  // Improved: Pick the blue card that, if infoToken is set, minimizes the sum of candidatesForSlot set sizes for all cards
+  pickCard(gameState) {
+    // Only consider blue cards
+    let blueIndexes = this.hand
       .map((card, idx) => (card.color === 'blue' ? idx : -1))
       .filter((idx) => idx !== -1)
     if (blueIndexes.length === 0) return null
+
+    // Rule: if you have 3 blue cards of the same number, only consider those
+    const blueNumberCounts = {}
+    blueIndexes.forEach((idx) => {
+      const num = this.hand[idx].number
+      blueNumberCounts[num] = (blueNumberCounts[num] || 0) + 1
+    })
+    const tripleNum = Object.keys(blueNumberCounts).find((num) => blueNumberCounts[num] === 3)
+    if (tripleNum !== undefined) {
+      blueIndexes = blueIndexes.filter((idx) => String(this.hand[idx].number) === String(tripleNum))
+    }
+
+    let bestIdx = null
+    let bestSum = Infinity
+    for (const idx of blueIndexes) {
+      // Simulate infoToken on this card
+      const original = this.hand[idx].infoToken
+      this.hand[idx].infoToken = true
+      // Compute sum of set sizes for all cards
+      const sum = this.hand.reduce((acc, card, i) => {
+        // Use gameState if available, else fallback to no deduction
+        const candidates = gameState.candidatesForSlot(this, i)
+        return acc + (candidates.possibilities ? candidates.possibilities.size : 1)
+      }, 0)
+      this.hand[idx].infoToken = original
+      if (sum < bestSum) {
+        bestSum = sum
+        bestIdx = idx
+      }
+    }
+    if (bestIdx !== null) {
+      this.hand[bestIdx].infoToken = true
+      return bestIdx
+    }
+    // fallback to random
     const pick = blueIndexes[Math.floor(Math.random() * blueIndexes.length)]
     this.hand[pick].infoToken = true
     return pick

@@ -19,7 +19,7 @@
       <template v-else>
         <q-icon name="help_outline" color="grey" />
       </template>
-      <template v-if="candidates">
+      <template v-if="candidates && !card.revealed && !card.infoToken">
         <div class="q-mt-xs text-caption">
           <span>
             <template v-for="(val, idx) in Array.from(candidates.possibilities)" :key="val">
