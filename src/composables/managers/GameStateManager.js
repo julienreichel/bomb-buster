@@ -144,7 +144,6 @@ export function useGameStateManager() {
     } else {
       gameStateInstance.currentPicker++
     }
-    console.log('Current picker:', gameStateInstance.currentPicker)
     if (gameStateInstance.currentPicker < players.length) {
       const current = players[gameStateInstance.currentPicker]
       if (current && current.isAI && current.pickCard) {
@@ -189,7 +188,6 @@ export function useGameStateManager() {
       if (gameStateInstance.currentPicker === players.length) {
         gameStateInstance.currentPicker = 0
       }
-      console.log('Current play picker:', gameStateInstance.currentPicker)
       const current = players[gameStateInstance.currentPicker]
       if (current.hand.every((card) => card.revealed)) {
         continue
@@ -279,9 +277,6 @@ export function useGameStateManager() {
     if (targetCard.revealed) {
       return invalidPick()
     }
-    console.log(
-      `Playing round: sourcePlayerIdx=${sourcePlayerIdx}, sourceCardId=${sourceCardId}, targetPlayerIdx=${targetPlayerIdx}, targetCardId=${targetCardId}`,
-    )
 
     let outcome = ''
     let revealed = []

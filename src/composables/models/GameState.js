@@ -54,7 +54,9 @@ export default class GameState {
   // CANDIDATES_FOR_SLOT: returns a Set of possible wire kinds for a slot
   // This version computes remaining counts from all players' hands and the board
   /**
-   * Returns a Set of possible wire kinds for a slot.
+   * Returns an object with:
+   *   - possibilities: Set of possible wire kinds for a slot
+   *   - mostProbable: { value, probability } for the most likely wire
    * @param {Object} player - The player whose slot is being checked
    * @param {number} idx - The index in the player's hand
    * @param {Object} [currentPlayer] - If provided, all cards of this player are considered visible
@@ -83,28 +85,61 @@ export default class GameState {
     const blueMax = 4
     const yellowMax = allCardsInHands.filter((c) => c.color === 'yellow').length
     const redMax = allCardsInHands.filter((c) => c.color === 'red').length
+
+    // Track possible wires and their counts for probability
+    const wireCounts = {}
+    let totalPossibilities = 0
+
     // For blue, check if not present in play
     for (let k = 1; k <= 12; ++k) {
       if (blueCounts[k] < blueMax && L <= k && k <= U) {
         S.add(k)
+        wireCounts[k] = blueMax - blueCounts[k]
+        totalPossibilities += blueMax - blueCounts[k]
       }
     }
     // For yellow, if any left and fits interval
+    let yellowWireCount = 0
     if (yellowCount < yellowMax) {
       this.yellowWires.forEach((wire) => {
-        if (L < wire.number && wire.number < U) {
-          S.add('yellow')
+        if (!wire.revealed && L < wire.number && wire.number < U) {
+          yellowWireCount++
         }
       })
+      if (yellowWireCount > 0) {
+        S.add('yellow')
+        wireCounts['yellow'] = yellowCount
+        totalPossibilities += yellowCount
+      }
     }
     // For red, if any left and fits interval
+    let redWireCount = 0
     if (redCount < redMax) {
       this.redWires.forEach((wire) => {
-        if (L < wire.number && wire.number < U) {
-          S.add('red')
+        if (!wire.revealed && L < wire.number && wire.number < U) {
+          redWireCount++
         }
       })
+      if (redWireCount > 0) {
+        S.add('red')
+        wireCounts['red'] = redCount
+        totalPossibilities += redCount
+      }
     }
-    return S
+
+    // Find most probable
+    let mostProbable = null
+    let maxProb = 0
+    for (const [val, count] of Object.entries(wireCounts)) {
+      if (totalPossibilities > 0) {
+        const prob = count / totalPossibilities
+        if (prob > maxProb) {
+          maxProb = prob
+          mostProbable = { value: val, probability: prob }
+        }
+      }
+    }
+
+    return { possibilities: S, mostProbable }
   }
 }
