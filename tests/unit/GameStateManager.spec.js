@@ -134,6 +134,13 @@ describe('useGameStateManager composable', () => {
       expect(result.outcome).toBe('match-red')
       expect([redA.revealed, redB.revealed].every(Boolean)).toBe(true)
       expect(result.revealed.sort()).toEqual(['rA', 'rB'].sort())
+      // Check history
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'rA',
+        result: expect.objectContaining({ outcome: 'match-red' }),
+      })
     })
 
     it('red: player has a red card, cannot pick it, because blue is not revealed', () => {
@@ -148,6 +155,12 @@ describe('useGameStateManager composable', () => {
         sourceCardId: 'rA',
       })
       expect(result.outcome).toBe('incomplete-pick')
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'rA',
+        result: expect.objectContaining({ outcome: 'incomplete-pick' }),
+      })
     })
 
     it('blue: player has 4 cards with same value, picks two from self, all are revealed', () => {
@@ -170,6 +183,14 @@ describe('useGameStateManager composable', () => {
         true,
       )
       expect(result.revealed.sort()).toEqual(['bA', 'bB', 'bC', 'bD'].sort())
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 0,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'match-blue' }),
+      })
     })
 
     it('blue: player has 3 cards, 4th in another player and both are revealed, pick is valid', () => {
@@ -190,6 +211,14 @@ describe('useGameStateManager composable', () => {
       expect(result.outcome).toBe('match-blue')
       expect([blueA.revealed, blueB.revealed, blueC.revealed].every(Boolean)).toBe(true)
       expect(result.revealed.sort()).toEqual(['bA', 'bB', 'bC'].sort())
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 0,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'match-blue' }),
+      })
     })
 
     it('blue: player has 3 cards, 4th in another player and not revealed, pick is invalid', () => {
@@ -212,6 +241,14 @@ describe('useGameStateManager composable', () => {
         false,
       )
       expect(result.revealed).toEqual([])
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 0,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'invalid-pick' }),
+      })
     })
 
     it('blue: player has 2 cards, other 2 in other players and both are revealed, pick is valid', () => {
@@ -232,6 +269,14 @@ describe('useGameStateManager composable', () => {
       expect(result.outcome).toBe('match-blue')
       expect([blueA.revealed, blueB.revealed].every(Boolean)).toBe(true)
       expect(result.revealed.sort()).toEqual(['bA', 'bB'].sort())
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 0,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'match-blue' }),
+      })
     })
 
     it('yellow: player has 2 yellow cards, 4 yellow cards in game, slef pick is invalid', () => {
@@ -254,6 +299,14 @@ describe('useGameStateManager composable', () => {
         [yellowA.revealed, yellowB.revealed, yellowC.revealed, yellowD.revealed].some(Boolean),
       ).toBe(false)
       expect(result.revealed).toEqual([])
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'yA',
+        targetPlayerIdx: 0,
+        targetCardId: 'yB',
+        result: expect.objectContaining({ outcome: 'invalid-pick' }),
+      })
     })
     it('yellow: only 2 yellow cards in game, both in same player, both picked from self, both are revealed', () => {
       // Setup: player 0 has 2 yellow cards, no other yellow cards in game
@@ -271,6 +324,14 @@ describe('useGameStateManager composable', () => {
       expect(result.outcome).toBe('match-yellow')
       expect([yellowA.revealed, yellowB.revealed].every(Boolean)).toBe(true)
       expect(result.revealed.sort()).toEqual(['yA', 'yB'].sort())
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'yA',
+        targetPlayerIdx: 0,
+        targetCardId: 'yB',
+        result: expect.objectContaining({ outcome: 'match-yellow' }),
+      })
     })
 
     it('miss decreases detonatorDial and sets infoToken', () => {
@@ -289,6 +350,14 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.detonatorDial).toBe(2)
       expect(blueB.infoToken).toBe(true)
       expect(result.infoToken).toBe(true)
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 1,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'miss' }),
+      })
     })
 
     it('blue match reveals both cards', () => {
@@ -306,6 +375,14 @@ describe('useGameStateManager composable', () => {
       expect(blueA.revealed).toBe(true)
       expect(blueB.revealed).toBe(true)
       expect(result.revealed).toEqual(['bA', 'bB'])
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 1,
+        targetCardId: 'bB',
+        result: expect.objectContaining({ outcome: 'match-blue' }),
+      })
     })
 
     it('yellow match reveals both cards', () => {
@@ -323,6 +400,14 @@ describe('useGameStateManager composable', () => {
       expect(yellowA.revealed).toBe(true)
       expect(yellowB.revealed).toBe(true)
       expect(result.revealed).toEqual(['yA', 'yB'])
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'yA',
+        targetPlayerIdx: 2,
+        targetCardId: 'yB',
+        result: expect.objectContaining({ outcome: 'match-yellow' }),
+      })
     })
 
     it('red target sets detonatorDial to 0 and reveals red', () => {
@@ -341,6 +426,14 @@ describe('useGameStateManager composable', () => {
       expect(redB.revealed).toBe(true)
       expect(gameStateManager.state.detonatorDial).toBe(0)
       expect(result.revealed).toEqual(['rB'])
+      expect(gameStateManager.state.history.at(-1)).toMatchObject({
+        type: 'play',
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 1,
+        targetCardId: 'rB',
+        result: expect.objectContaining({ outcome: 'hit-red' }),
+      })
     })
   })
   describe('advancePlayRound', () => {

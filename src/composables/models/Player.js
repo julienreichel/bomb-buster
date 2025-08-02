@@ -85,13 +85,25 @@ export class AIPlayer extends Player {
     if (this._allUnrevealedRed(unrevealed)) return this._pickFirstRed(unrevealed)
     const valueGroups = this._groupByValue(unrevealed)
     const four = this._pickFourOfAKind(valueGroups)
-    if (four) return four
+    if (four) {
+      console.log('Picked four of a kind:', four)
+      return four
+    }
     const two = this._pickTwoOfAKind(valueGroups, gameState)
-    if (two) return two
+    if (two) {
+      console.log('Picked two of a kind:', two)
+      return two
+    }
     const infoToken = this._pickInfoToken(unrevealed, gameState)
-    if (infoToken) return infoToken
+    if (infoToken) {
+      console.log('Picked info token:', infoToken)
+      return infoToken
+    }
     const best = this._pickBestProbability(gameState)
-    if (best) return best
+    if (best) {
+      console.log('Picked best probability:', best)
+      return best
+    }
     return null
   }
 

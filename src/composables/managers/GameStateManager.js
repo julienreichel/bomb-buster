@@ -219,29 +219,33 @@ export function useGameStateManager() {
    * @returns {Object} result { outcome, detonatorDial, revealed, infoToken }
    */
   function playRound({ sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId }) {
+    function logAndReturn(result) {
+      gameStateInstance.history.push({
+        type: 'play',
+        sourcePlayerIdx,
+        sourceCardId,
+        targetPlayerIdx,
+        targetCardId,
+        result,
+      })
+      return result
+    }
     function invalidPick(outcome = 'invalid-pick') {
-      return {
+      const result = {
         outcome,
         detonatorDial: gameStateInstance.detonatorDial,
         revealed: [],
         infoToken: false,
       }
+      return logAndReturn(result)
     }
     const players = gameStateInstance.players
-    if (sourcePlayerIdx == null) {
-      return invalidPick()
-    }
+    if (sourcePlayerIdx == null) return invalidPick()
     const sourcePlayer = players[sourcePlayerIdx]
-    if (!sourcePlayer) {
-      return invalidPick()
-    }
+    if (!sourcePlayer) return invalidPick()
     const sourceCard = sourcePlayer.hand.find((c) => c.id === sourceCardId)
-    if (!sourceCard) {
-      return invalidPick()
-    }
-    if (sourceCard.revealed) {
-      return invalidPick()
-    }
+    if (!sourceCard) return invalidPick()
+    if (sourceCard.revealed) return invalidPick()
 
     // Special red logic: if source card is red and all cards in player's hand are revealed, reveal all red cards in that hand
     if (sourceCard.color === 'red') {
@@ -253,29 +257,21 @@ export function useGameStateManager() {
           card.revealed = true
           toReveal.push(card.id)
         }
-        return {
+        return logAndReturn({
           outcome: 'match-red',
           detonatorDial: gameStateInstance.detonatorDial,
           revealed: toReveal,
           infoToken: false,
-        }
+        })
       }
     }
 
-    if (targetPlayerIdx == null) {
-      return invalidPick('incomplete-pick')
-    }
+    if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
     const targetPlayer = players[targetPlayerIdx]
-    if (!targetPlayer) {
-      return invalidPick()
-    }
+    if (!targetPlayer) return invalidPick()
     const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)
-    if (!sourceCard || !targetCard) {
-      return invalidPick()
-    }
-    if (targetCard.revealed) {
-      return invalidPick()
-    }
+    if (!sourceCard || !targetCard) return invalidPick()
+    if (targetCard.revealed) return invalidPick()
 
     let outcome = ''
     let revealed = []
@@ -298,9 +294,7 @@ export function useGameStateManager() {
           }
           if (!allRevealed) break
         }
-        if (!allRevealed) {
-          return invalidPick()
-        }
+        if (!allRevealed) return invalidPick()
         // Both cards from same player: reveal all blue cards with this value in that hand
         for (const card of sourcePlayer.hand) {
           if (card.color === 'blue' && card.number === value) {
@@ -317,7 +311,12 @@ export function useGameStateManager() {
       }
       outcome = 'match-blue'
       revealed = toReveal
-      return { outcome, detonatorDial: gameStateInstance.detonatorDial, revealed, infoToken }
+      return logAndReturn({
+        outcome,
+        detonatorDial: gameStateInstance.detonatorDial,
+        revealed,
+        infoToken,
+      })
     }
 
     // Yellow logic: if both cards are yellow
@@ -336,9 +335,7 @@ export function useGameStateManager() {
           }
           if (!allRevealed) break
         }
-        if (!allRevealed) {
-          return invalidPick()
-        }
+        if (!allRevealed) return invalidPick()
         // Both cards from same player: reveal all yellow cards in that hand
         for (const card of sourcePlayer.hand) {
           if (card.color === 'yellow') {
@@ -355,7 +352,12 @@ export function useGameStateManager() {
       }
       outcome = 'match-yellow'
       revealed = toReveal
-      return { outcome, detonatorDial: gameStateInstance.detonatorDial, revealed, infoToken }
+      return logAndReturn({
+        outcome,
+        detonatorDial: gameStateInstance.detonatorDial,
+        revealed,
+        infoToken,
+      })
     }
 
     // Previous rules: red, miss, etc.
@@ -364,7 +366,12 @@ export function useGameStateManager() {
       gameStateInstance.detonatorDial = 0
       outcome = 'hit-red'
       revealed = [targetCard.id]
-      return { outcome, detonatorDial: gameStateInstance.detonatorDial, revealed, infoToken }
+      return logAndReturn({
+        outcome,
+        detonatorDial: gameStateInstance.detonatorDial,
+        revealed,
+        infoToken,
+      })
     }
     if (sourceCard.number !== targetCard.number) {
       gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
@@ -372,7 +379,12 @@ export function useGameStateManager() {
       infoToken = true
       outcome = 'miss'
       revealed = []
-      return { outcome, detonatorDial: gameStateInstance.detonatorDial, revealed, infoToken }
+      return logAndReturn({
+        outcome,
+        detonatorDial: gameStateInstance.detonatorDial,
+        revealed,
+        infoToken,
+      })
     }
     return invalidPick()
   }

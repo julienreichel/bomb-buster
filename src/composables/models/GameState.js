@@ -45,7 +45,12 @@ export default class GameState {
     // Build a pool of available cards (blue and red)
     let candidates = []
     for (let k = leftValue; k <= 12; ++k) {
-      for (let j = 4 - (blueCounts[k] || 0); j > 0; j--) {
+      // Assume that no one has 4 card of the same type, they would have played them already
+      let max = Math.min(3, 4 - (blueCounts[k] || 0))
+      if (max === 3 && k === leftValue && leftIdx !== -1) {
+        max--
+      }
+      for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
     }
@@ -88,7 +93,12 @@ export default class GameState {
     // Build a pool of available cards (blue and red)
     let candidates = []
     for (let k = rightValue; k >= 1; --k) {
-      for (let j = 4 - (blueCounts[k] || 0); j > 0; j--) {
+      // Assume that no one has 4 card of the same type, they would have played them already
+      let max = Math.min(3, 4 - (blueCounts[k] || 0))
+      if (max === 3 && k === rightValue && rightIdx !== player.hand.length) {
+        max--
+      }
+      for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
     }
