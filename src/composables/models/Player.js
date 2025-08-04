@@ -61,7 +61,7 @@ export class AIPlayer extends Player {
       const sum = this.hand.reduce((acc, card, i) => {
         // Use gameState if available, else fallback to no deduction
         const candidates = gameState.candidatesForSlot(this, i)
-        return acc + (candidates.possibilities ? candidates.possibilities.size : 1)
+        return acc + Math.min(4, candidates.size)
       }, 0)
       this.hand[idx].infoToken = original
       if (sum < bestSum) {
@@ -103,6 +103,12 @@ export class AIPlayer extends Player {
     if (best) {
       console.log('Picked best probability:', best)
       return best
+    }
+    // Fallback: try edge strategy
+    const edge = this._pickEdgeStrategy(gameState)
+    if (edge) {
+      console.log('Picked edge strategy:', edge)
+      return edge
     }
     return null
   }
@@ -191,25 +197,20 @@ export class AIPlayer extends Player {
 
   _pickBestProbability(gameState) {
     let best = null
-    let bestProb = 0
-    let fallback = null
-    let fallbackProb = 0
+    const slotSets = []
     gameState.players
       .filter((other) => other.id !== this.id)
       .forEach((other) => {
         other.hand.forEach((card, idx) => {
           if (card.revealed) return
           const candidates = gameState.candidatesForSlot(other, idx, this)
-          if (!candidates || !candidates.possibilities || candidates.possibilities.size === 0)
-            return
-          // First, try to match the most probable
-          if (candidates.mostProbable) {
+          slotSets.push({ player: other, card, candidates })
+          if (candidates.size === 1) {
+            const value = candidates.entries().next().value[0]
             const myMatch = this.hand.find(
-              (myCard) =>
-                !myCard.revealed && String(myCard.number) === String(candidates.mostProbable.value),
+              (myCard) => !myCard.revealed && String(myCard.number) === String(value),
             )
-            if (myMatch && candidates.mostProbable.probability > bestProb) {
-              bestProb = candidates.mostProbable.probability
+            if (myMatch) {
               best = {
                 sourcePlayerIdx: this.id,
                 sourceCardId: myMatch.id,
@@ -218,27 +219,89 @@ export class AIPlayer extends Player {
               }
             }
           }
-          // If no bestProb match, look for any match in the set
-          if (!best) {
-            const mySetMatch = this.hand.find(
-              (myCard) => !myCard.revealed && candidates.possibilities.has(myCard.number),
-            )
-            if (mySetMatch) {
-              // Assign probability 1/size of set
-              const prob = 1 / candidates.possibilities.size
-              if (prob > fallbackProb) {
-                fallbackProb = prob
-                fallback = {
-                  sourcePlayerIdx: this.id,
-                  sourceCardId: mySetMatch.id,
-                  targetPlayerIdx: other.id,
-                  targetCardId: card.id,
-                }
-              }
-            }
-          }
         })
       })
-    return best || fallback
+    if (best) {
+      console.log('Deterministic match found')
+      return best
+    }
+    // use monteCarloSlotProbabilities
+    const probabilities = gameState.monteCarloSlotProbabilities(slotSets, this, 10000)
+
+    const myCards = this.hand.filter((c) => !c.revealed)
+    let bestProb = 0
+    myCards.forEach((card) => {
+      probabilities.forEach((p) => {
+        const target = p.slots.find(
+          (s) =>
+            Number(s.value) === Number(card.number) ||
+            (card.color === 'yellow' && s.color === 'yellow'),
+        )
+        if (target && target.probability > bestProb) {
+          bestProb = target.probability
+          best = {
+            sourcePlayerIdx: this.id,
+            sourceCardId: card.id,
+            targetPlayerIdx: p.info.player.id,
+            targetCardId: p.info.card.id,
+          }
+        }
+      })
+    })
+    console.log('Probabilistic match found:', bestProb)
+    return best || null
+  }
+
+  _pickEdgeStrategy(gameState) {
+    // Try 1/first, 12/last, 2/first, 11/last, 3/first, 10/last
+    const fallbackPairs = [
+      { my: 1, other: 'first' },
+      { my: 12, other: 'last' },
+      { my: 2, other: 'first' },
+      { my: 11, other: 'last' },
+      { my: 3, other: 'first' },
+      { my: 10, other: 'last' },
+    ]
+    for (const { my, other } of fallbackPairs) {
+      const myCard = this.hand.find((c) => !c.revealed && c.number === my)
+      if (!myCard) continue
+      for (const p of gameState.players) {
+        if (p.id === this.id) continue
+        if (!p.hand.length) continue
+        let targetCard = null
+        if (other === 'first') {
+          const first = p.hand[0]
+          if (first && !first.revealed) targetCard = first
+        } else if (other === 'last') {
+          const last = p.hand[p.hand.length - 1]
+          if (last && !last.revealed) targetCard = last
+        }
+        if (targetCard) {
+          return {
+            sourcePlayerIdx: this.id,
+            sourceCardId: myCard.id,
+            targetPlayerIdx: p.id,
+            targetCardId: targetCard.id,
+          }
+        }
+      }
+    }
+    // If no edge found, pick the first valid card in hand and the first possible card in the first other player's hand
+    const myCard = this.hand.find((c) => !c.revealed)
+    const otherPlayer = gameState.players.find(
+      (p) => p.id !== this.id && p.hand.some((c) => !c.revealed),
+    )
+    if (myCard && otherPlayer) {
+      const targetCard = otherPlayer.hand.find((c) => !c.revealed)
+      if (targetCard) {
+        return {
+          sourcePlayerIdx: this.id,
+          sourceCardId: myCard.id,
+          targetPlayerIdx: otherPlayer.id,
+          targetCardId: targetCard.id,
+        }
+      }
+    }
+    return null
   }
 }

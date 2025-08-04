@@ -22,13 +22,13 @@
       <template v-if="candidates && !card.revealed && !card.infoToken">
         <div class="q-mt-xs text-caption">
           <span>
-            <template v-for="(val, idx) in Array.from(candidates.possibilities)" :key="val">
-              <span>{{ val }}<span v-if="idx < candidates.possibilities.size - 1">, </span></span>
+            <template v-for="(val, idx) in Array.from(candidates)" :key="val">
+              <span>{{ val }}<span v-if="idx < candidates.size - 1">, </span></span>
             </template>
           </span>
         </div>
         <div class="text-caption">
-          <span v-if="candidates.mostProbable && candidates.possibilities.size > 1">
+          <span v-if="candidates.mostProbable && candidates.size > 1">
             ({{ (candidates.mostProbable.probability * 100).toFixed(1) }}%)
             {{ candidates.mostProbable.value }}
           </span>

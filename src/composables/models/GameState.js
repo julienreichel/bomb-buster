@@ -45,11 +45,7 @@ export default class GameState {
     // Build a pool of available cards (blue and red)
     let candidates = []
     for (let k = leftValue; k <= 12; ++k) {
-      // Assume that no one has 4 card of the same type, they would have played them already
-      let max = Math.min(3, 4 - (blueCounts[k] || 0))
-      if (max === 3 && k === leftValue && leftIdx !== -1) {
-        max--
-      }
+      let max = 4 - (blueCounts[k] || 0)
       for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
@@ -93,11 +89,7 @@ export default class GameState {
     // Build a pool of available cards (blue and red)
     let candidates = []
     for (let k = rightValue; k >= 1; --k) {
-      // Assume that no one has 4 card of the same type, they would have played them already
-      let max = Math.min(3, 4 - (blueCounts[k] || 0))
-      if (max === 3 && k === rightValue && rightIdx !== player.hand.length) {
-        max--
-      }
+      let max = 4 - (blueCounts[k] || 0)
       for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
@@ -130,9 +122,7 @@ export default class GameState {
   // CANDIDATES_FOR_SLOT: returns a Set of possible wire kinds for a slot
   // This version computes remaining counts from all players' hands and the board
   /**
-   * Returns an object with:
-   *   - possibilities: Set of possible wire kinds for a slot
-   *   - mostProbable: { value, probability } for the most likely wire
+   * Returns a Set of possible wire kinds for a slot
    * @param {Object} player - The player whose slot is being checked
    * @param {number} idx - The index in the player's hand
    * @param {Object} [currentPlayer] - If provided, all cards of this player are considered visible
@@ -169,60 +159,162 @@ export default class GameState {
     )
     const S = new Set()
 
-    // Track possible wires and their counts for probability
-    const wireCounts = {}
-    let totalPossibilities = 0
-
     // For blue, check if not present in play
     for (let k = 1; k <= 12; ++k) {
       if (blueCounts[k] < blueMax && L <= k && k <= U) {
         S.add(k)
-        wireCounts[k] = blueMax - blueCounts[k]
-        totalPossibilities += blueMax - blueCounts[k]
       }
     }
     // For yellow, if any left and fits interval
-    let yellowWireCount = 0
     if (yellowCount < yellowMax) {
       this.yellowWires.forEach((wire) => {
-        if (!wire.revealed && L < wire.number && wire.number < U) {
-          yellowWireCount++
+        if (
+          !wire.revealed &&
+          !currentPlayerCardIds?.has(wire.id) &&
+          L < wire.number &&
+          wire.number < U
+        ) {
+          S.add(wire.number)
         }
       })
-      if (yellowWireCount > 0) {
-        S.add('yellow')
-        wireCounts['yellow'] = yellowCount
-        totalPossibilities += yellowCount
-      }
     }
     // For red, if any left and fits interval
-    let redWireCount = 0
     if (redCount < redMax) {
       this.redWires.forEach((wire) => {
-        if (!wire.revealed && L < wire.number && wire.number < U) {
-          redWireCount++
+        if (
+          !wire.revealed &&
+          !currentPlayerCardIds?.has(wire.id) &&
+          L < wire.number &&
+          wire.number < U
+        ) {
+          S.add(wire.number)
         }
       })
-      if (redWireCount > 0) {
-        S.add('red')
-        wireCounts['red'] = redCount
-        totalPossibilities += redCount
-      }
     }
 
-    // Find most probable
-    let mostProbable = null
-    let maxProb = 0
-    for (const [val, count] of Object.entries(wireCounts)) {
-      if (totalPossibilities > 0) {
-        const prob = count / totalPossibilities
-        if (prob > maxProb) {
-          maxProb = prob
-          mostProbable = { value: val, probability: prob }
+    return S
+  }
+
+  /**
+   * Given an array of slot possibilities (from candidatesForSlot),
+   * perform Monte Carlo sampling to estimate the most probable wire for each slot.
+   * @param {Array<Set|{possibilities:Set}>} slotPossibilities - Array of Sets or objects with .possibilities for each slot
+   * @param {number} N - Number of simulations (default 100)
+   * @returns {Array<{mostProbable: any, probability: number, counts: Object}>}
+   */
+  monteCarloSlotProbabilities(slotSets, currentPlayer = null, N = 100) {
+    const numSlots = slotSets.length
+    // Build a set of card ids for currentPlayer if provided
+    const currentPlayerCardIds = currentPlayer ? new Set(currentPlayer.hand.map((c) => c.id)) : null
+
+    // Count all cards in play (no double-counting)
+    const allCardsInHands = this.players.flatMap((p) => p.hand)
+
+    // Count visible blue, yellow, red
+    let yellowCount = 0
+    let redCount = 0
+    const pool = []
+
+    for (const c of allCardsInHands) {
+      const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
+      if (c.color === 'blue' && !isVisible) pool.push(c)
+      if (c.color === 'yellow' && !isVisible) yellowCount++
+      if (c.color === 'red' && !isVisible) redCount++
+    }
+    pool.sort((a, b) => a.number - b.number) // Sort by number ascending
+    // Monte Carlo sampling
+    const slotValueCounts = Array(numSlots)
+      .fill(0)
+      .map(() => ({}))
+
+    let successRun = 0
+    for (let sim = 0; sim < N; ++sim) {
+      // Shuffle pool
+      let randomYellow = []
+      let randomRed = []
+      if (yellowCount) {
+        // lets put yellowMax - yellowCount yellow wires in the pool
+        randomYellow = [...this.yellowWires].sort(() => Math.random() - 0.5).slice(0, yellowCount)
+      }
+      if (redCount) {
+        randomRed = [...this.redWires].sort(() => Math.random() - 0.5).slice(0, redCount)
+      }
+      // shuffle, but give some preference to lower numbers
+      let shuffled = [...pool, ...randomYellow, ...randomRed].sort(
+        (a, b) => a.number - b.number + Math.random() * 10 - 5,
+      )
+      if (shuffled.length < numSlots) {
+        console.warn(
+          'Not enough cards in pool for Monte Carlo sampling:',
+          'pool',
+          pool.length,
+          'yellow',
+          randomYellow.length,
+          'red',
+          randomRed.length,
+          'needed',
+          numSlots,
+        )
+      }
+      // Try to assign to slots
+      let valid = true
+      let minVal = 1
+      let currentPlayerId = null
+      const assignment = Array(numSlots)
+      for (let s = 0; s < numSlots; ++s) {
+        // Find a value in shuffled that is in slotSets[s]
+        let foundIdx = -1
+        if (slotSets[s].player.id !== currentPlayerId) {
+          currentPlayerId = slotSets[s].player.id
+          minVal = 1
         }
+        for (let k = 0; k < shuffled.length; ++k) {
+          const value = shuffled[k].number
+          if (value >= minVal && slotSets[s].candidates.has(value)) {
+            foundIdx = k
+            minVal = value
+            break
+          }
+        }
+        if (foundIdx === -1) {
+          valid = false
+          break
+        }
+
+        assignment[s] = shuffled[foundIdx].number
+        shuffled.splice(foundIdx, 1)
+      }
+      if (!valid) continue
+      successRun++
+      // Accumulate
+      for (let s = 0; s < numSlots; ++s) {
+        const v = assignment[s]
+        slotValueCounts[s][v] = (slotValueCounts[s][v] || 0) + 1
       }
     }
+    if (successRun < N / 100) {
+      console.warn('Monte Carlo sampling did not find enough valid runs:', successRun, 'out of', N)
+    }
+    // Compute probabilities
+    return slotValueCounts.map((counts, idx) => {
+      let total = 0
+      const slots = []
+      Object.entries(counts).forEach(([val, count]) => {
+        total += count
+        const digit = (Number(val) * 10) % 10
+        const color = digit === 0 ? 'blue' : digit === 1 ? 'yellow' : 'red'
+        slots.push({ value: val, count, color })
+      })
+      slots.sort((a, b) => a.count - b.count)
 
-    return { possibilities: S, mostProbable }
+      return {
+        slots: slots.map((s) => ({
+          value: s.value,
+          color: s.color,
+          probability: total > 0 ? s.count / total : 0,
+        })),
+        info: slotSets[idx],
+      }
+    })
   }
 }

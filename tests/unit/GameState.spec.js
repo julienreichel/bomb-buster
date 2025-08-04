@@ -94,7 +94,7 @@ describe('GameState composable', () => {
       }
       const gs = new GameState({ players: [player], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, blue 5 is not visible, should be possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 4, 5, 6, 7, 8]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 6, 7, 8]))
     })
 
     it('blue candidate give other player has all 4', () => {
@@ -115,7 +115,7 @@ describe('GameState composable', () => {
       }
       const gs = new GameState({ players: [player, player2], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, blue 5 is not visible, should be possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 5, 6, 7, 8]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 5, 6, 7, 8]))
     })
 
     it('blue candidate give other player has other 2', () => {
@@ -135,7 +135,7 @@ describe('GameState composable', () => {
       }
       const gs = new GameState({ players: [player, player2], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, blue 5 is not visible, should be possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([3, 4, 5, 6, 7, 8]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([3, 4, 5, 6, 7, 8]))
     })
 
     it('blue candidate give other players have other 2', () => {
@@ -161,7 +161,7 @@ describe('GameState composable', () => {
         redWires: [],
       })
       // Slot 1: left 2, right 8, blue 5 is not visible, should be possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([3, 4, 5, 6, 7, 8]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([3, 4, 5, 6, 7, 8]))
     })
 
     it('yellow candidate only if wire fits interval: in', () => {
@@ -178,9 +178,7 @@ describe('GameState composable', () => {
       ]
       const gs = new GameState({ players: [player], yellowWires, redWires: [] })
       // Slot 1: left 2, right 8, yellow 5 and 7 both fit, so yellow is possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(
-        new Set([2, 3, 4, 5, 6, 'yellow']),
-      )
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 5.1, 6]))
     })
 
     it('yellow candidate only if wire fits interval: out', () => {
@@ -197,7 +195,7 @@ describe('GameState composable', () => {
       ]
       const gs = new GameState({ players: [player], yellowWires, redWires: [] })
       // Slot 1: left 2, right 8, yellow 5 and 7 both fit, so yellow is possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 4, 5]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5]))
     })
 
     it('no yellow candidate if all founds', () => {
@@ -217,7 +215,7 @@ describe('GameState composable', () => {
       ]
       const gs = new GameState({ players: [player, player2], yellowWires, redWires: [] })
       // Slot 1: left 2, right 8, yellow 5 and 7 both fit, so yellow is possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 4, 5, 6]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 6]))
     })
 
     it('red candidate only if wire fits interval: in', () => {
@@ -234,7 +232,7 @@ describe('GameState composable', () => {
       ]
       const gs = new GameState({ players: [player], yellowWires: [], redWires })
       // Slot 1: left 2, right 8, red 4 and 7 both fit, so red is possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 4, 5, 6, 'red']))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 4.5, 5, 6]))
     })
 
     it('red candidate only if wire fits interval: out', () => {
@@ -251,7 +249,24 @@ describe('GameState composable', () => {
       ]
       const gs = new GameState({ players: [player], yellowWires: [], redWires })
       // Slot 1: left 2, right 8, red 4 and 7 both fit, so red is possible
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([2, 3, 4, 5, 6]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 6]))
+    })
+
+    it('all red candidate only if wire fits interval: out', () => {
+      const player = {
+        hand: [
+          { id: 1, color: 'blue', number: 2, revealed: true },
+          { id: 2, color: 'red', number: 6.5 },
+          { id: 3, color: 'blue', number: 8, revealed: true },
+        ],
+      }
+      const redWires = [
+        { id: 20, color: 'red', number: 6.5 },
+        { id: 21, color: 'red', number: 7.5 },
+      ]
+      const gs = new GameState({ players: [player], yellowWires: [], redWires })
+      // Slot 1: left 2, right 8, red 4 and 7 both fit, so red is possible
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 6, 6.5, 7, 7.5, 8]))
     })
 
     it('only one candidate if token', () => {
@@ -264,7 +279,7 @@ describe('GameState composable', () => {
       }
       const gs = new GameState({ players: [player], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, but blue 4 is already visible, so no blue left
-      expect(gs.candidatesForSlot(player, 1).possibilities).toEqual(new Set([4]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([4]))
     })
 
     it('blue candidate given curent player has all 4', () => {
@@ -286,7 +301,7 @@ describe('GameState composable', () => {
       const gs = new GameState({ players: [player, player2], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, blue 5 is not visible, should be possible
       const result = gs.candidatesForSlot(player, 1, player2)
-      expect(result.possibilities).toEqual(new Set([2, 3, 5, 6, 7, 8]))
+      expect(result).toEqual(new Set([2, 3, 5, 6, 7, 8]))
     })
 
     it('probability: single candidate', () => {
@@ -300,8 +315,7 @@ describe('GameState composable', () => {
       const gs = new GameState({ players: [player], yellowWires: [], redWires: [] })
       // Only blue 5 is possible, so probability should be 1
       const result = gs.candidatesForSlot(player, 1)
-      expect(result.possibilities).toEqual(new Set([5]))
-      expect(result.mostProbable).toEqual({ value: '5', probability: 1 })
+      expect(result).toEqual(new Set([5]))
     })
 
     it('probability: two blue candidates', () => {
@@ -316,8 +330,7 @@ describe('GameState composable', () => {
       const gs = new GameState({ players: [player], yellowWires: [], redWires: [] })
 
       const result = gs.candidatesForSlot(player, 1)
-      expect(result.possibilities).toEqual(new Set([2, 3]))
-      expect(result.mostProbable).toEqual({ value: '2', probability: 3 / 5 })
+      expect(result).toEqual(new Set([2, 3]))
     })
 
     it('probability: two blue candidates, with player own info', () => {
@@ -339,31 +352,144 @@ describe('GameState composable', () => {
       const gs = new GameState({ players: [player, player2], yellowWires: [], redWires: [] })
 
       const result = gs.candidatesForSlot(player, 1, player2)
-      expect(result.possibilities).toEqual(new Set([2]))
-      expect(result.mostProbable).toEqual({ value: '2', probability: 1 })
+      expect(result).toEqual(new Set([2]))
+    })
+  })
+  describe('monteCarloSlotProbabilities', () => {
+    it('returns correct result for simple blue slots', () => {
+      const player = {
+        id: 1,
+        hand: [
+          { id: 1, color: 'blue', number: 1 },
+          { id: 2, color: 'blue', number: 2 },
+          { id: 3, color: 'blue', number: 3 },
+        ],
+      }
+      // 3 slots, all can be 1, 2, or 3, but only one of each
+      const slotPoss = [
+        { player, card: player.hand[0], candidates: new Set([1, 2, 3]) },
+        { player, card: player.hand[1], candidates: new Set([1, 2, 3]) },
+        { player, card: player.hand[2], candidates: new Set([1, 2, 3]) },
+      ]
+      // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
+
+      const gs = new GameState({ players: [player] })
+      console.log(gs.candidatesForSlot(player, 0))
+
+      // As the result should be increasing or equal, there is in fact only one possibility
+      const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
+
+      expect(res[0].slots.length).toEqual(1)
+      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].probability).toEqual(1)
+
+      expect(res[1].slots.length).toEqual(1)
+      expect(res[1].slots[0].value).toEqual('2')
+      expect(res[1].slots[0].probability).toEqual(1)
+
+      expect(res[2].slots.length).toEqual(1)
+      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].probability).toEqual(1)
     })
 
-    it.skip('probability: two blue candidates, with player own info and deductions', () => {
+    it('returns correct result for case with yellow cards', () => {
+      const yellow1 = { id: 2, color: 'yellow', number: 2.1 }
       const player = {
-        hand: [
-          { id: 1, color: 'blue', number: 2, revealed: true },
-          { id: 2, color: 'blue', number: 2 },
-          { id: 3, color: 'blue', number: 2 },
-          { id: 4, color: 'blue', number: 3, revealed: true },
-        ],
+        id: 1,
+        hand: [{ id: 1, color: 'blue', number: 1 }, yellow1, { id: 3, color: 'blue', number: 3 }],
       }
-      const player2 = {
-        hand: [
-          { id: 12, color: 'blue', number: 3 },
-          { id: 13, color: 'blue', number: 3 },
-        ],
-      }
-      const gs = new GameState({ players: [player, player2], yellowWires: [], redWires: [] })
+      // 3 slots, all can be 1, 2, or 3, but only one of each
+      const slotPoss = [
+        { player, card: player.hand[0], candidates: new Set([1, 2.1, 3]) },
+        { player, card: player.hand[1], candidates: new Set([1, 2.1, 3]) },
+        { player, card: player.hand[2], candidates: new Set([1, 2.1, 3]) },
+      ]
+      // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
 
-      // it is not possible for card idx=1 to be 3, as there is only ONE 3 wire left in the game
-      const result = gs.candidatesForSlot(player, 1, player2)
-      expect(result.possibilities).toEqual(new Set([2]))
-      expect(result.mostProbable).toEqual({ value: '2', probability: 1 })
+      const gs = new GameState({ players: [player], yellowWires: [yellow1] })
+      console.log(gs.candidatesForSlot(player, 0))
+
+      // As the result should be increasing or equal, there is in fact only one possibility
+      const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
+
+      expect(res[0].slots.length).toEqual(1)
+      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].probability).toEqual(1)
+
+      expect(res[1].slots.length).toEqual(1)
+      expect(res[1].slots[0].value).toEqual('2.1')
+      expect(res[1].slots[0].probability).toEqual(1)
+
+      expect(res[2].slots.length).toEqual(1)
+      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].probability).toEqual(1)
+    })
+
+    it('returns correct result for case with 2 possible yellow cards', () => {
+      const yellow1 = { id: 2, color: 'yellow', number: 2.1 }
+      const yellow2 = { id: 3, color: 'yellow', number: 3.1 }
+      const player = {
+        id: 1,
+        hand: [{ id: 1, color: 'blue', number: 1 }, yellow1, { id: 4, color: 'blue', number: 4 }],
+      }
+      // 3 slots, all can be 1, 2, or 3, but only one of each
+      const slotPoss = [
+        { player, card: player.hand[0], candidates: new Set([1, 2.1, 3.1, 4]) },
+        { player, card: player.hand[1], candidates: new Set([1, 2.1, 3.1, 4]) },
+        { player, card: player.hand[2], candidates: new Set([1, 2.1, 3.1, 4]) },
+      ]
+      // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
+
+      const gs = new GameState({ players: [player], yellowWires: [yellow1, yellow2] })
+      console.log(gs.candidatesForSlot(player, 0))
+
+      // As the result should be increasing or equal, there is in fact only one possibility
+      const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
+      console.log(res[0], res[1], res[2])
+
+      expect(res[0].slots.length).toEqual(1)
+      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].probability).toEqual(1)
+
+      expect(res[1].slots.length).toEqual(2)
+      expect(res[1].slots.map((s) => s.value).sort()).toEqual(['2.1', '3.1'])
+
+      expect(res[2].slots.length).toEqual(1)
+      expect(res[2].slots[0].value).toEqual('4')
+      expect(res[2].slots[0].probability).toEqual(1)
+    })
+
+    it('returns correct result for case with red cards', () => {
+      const red1 = { id: 2, color: 'red', number: 2.5 }
+      const player = {
+        id: 1,
+        hand: [{ id: 1, color: 'blue', number: 1 }, red1, { id: 3, color: 'blue', number: 3 }],
+      }
+      // 3 slots, all can be 1, 2, or 3, but only one of each
+      const slotPoss = [
+        { player, card: player.hand[0], candidates: new Set([1, 2.5, 3]) },
+        { player, card: player.hand[1], candidates: new Set([1, 2.5, 3]) },
+        { player, card: player.hand[2], candidates: new Set([1, 2.5, 3]) },
+      ]
+      // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
+
+      const gs = new GameState({ players: [player], redWires: [red1] })
+      console.log(gs.candidatesForSlot(player, 0))
+
+      // As the result should be increasing or equal, there is in fact only one possibility
+      const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
+
+      expect(res[0].slots.length).toEqual(1)
+      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].probability).toEqual(1)
+
+      expect(res[1].slots.length).toEqual(1)
+      expect(res[1].slots[0].value).toEqual('2.5')
+      expect(res[1].slots[0].probability).toEqual(1)
+
+      expect(res[2].slots.length).toEqual(1)
+      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].probability).toEqual(1)
     })
   })
 })
