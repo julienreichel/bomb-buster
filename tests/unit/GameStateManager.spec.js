@@ -150,17 +150,13 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.players[0].hand = [redA, blueA]
       gameStateManager.state.players[1].hand = []
       gameStateManager.state.players[2].hand = []
+      const historyLength = gameStateManager.state.history.length
       const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'rA',
       })
       expect(result.outcome).toBe('incomplete-pick')
-      expect(gameStateManager.state.history.at(-1)).toMatchObject({
-        type: 'play',
-        sourcePlayerIdx: 0,
-        sourceCardId: 'rA',
-        result: expect.objectContaining({ outcome: 'incomplete-pick' }),
-      })
+      expect(gameStateManager.state.history.length).toBe(historyLength)
     })
 
     it('blue: player has 4 cards with same value, picks two from self, all are revealed', () => {
@@ -230,6 +226,7 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.players[0].hand = [blueA, blueB, blueC]
       gameStateManager.state.players[1].hand = [blueD]
       gameStateManager.state.players[2].hand = []
+      const historyLength = gameStateManager.state.history.length
       const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'bA',
@@ -241,14 +238,23 @@ describe('useGameStateManager composable', () => {
         false,
       )
       expect(result.revealed).toEqual([])
-      expect(gameStateManager.state.history.at(-1)).toMatchObject({
-        type: 'play',
+      expect(gameStateManager.state.history.length).toBe(historyLength)
+    })
+
+    it('pick two different cards in the same player is invalid', () => {
+      const blueA = { id: 'bA', color: 'blue', number: 7 }
+      const blueB = { id: 'bB', color: 'blue', number: 8 }
+      const blueC = { id: 'bC', color: 'blue', number: 8 }
+      gameStateManager.state.players[0].hand = [blueA, blueB, blueC]
+      const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'bA',
         targetPlayerIdx: 0,
         targetCardId: 'bB',
-        result: expect.objectContaining({ outcome: 'invalid-pick' }),
       })
+      expect(result.outcome).toBe('invalid-pick')
+      expect([blueA.revealed, blueB.revealed, blueC.revealed].some(Boolean)).toBe(false)
+      expect(result.revealed).toEqual([])
     })
 
     it('blue: player has 2 cards, other 2 in other players and both are revealed, pick is valid', () => {
@@ -288,6 +294,7 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.players[0].hand = [yellowA, yellowB]
       gameStateManager.state.players[1].hand = [yellowC]
       gameStateManager.state.players[2].hand = [yellowD]
+      const historyLength = gameStateManager.state.history.length
       const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'yA',
@@ -299,14 +306,7 @@ describe('useGameStateManager composable', () => {
         [yellowA.revealed, yellowB.revealed, yellowC.revealed, yellowD.revealed].some(Boolean),
       ).toBe(false)
       expect(result.revealed).toEqual([])
-      expect(gameStateManager.state.history.at(-1)).toMatchObject({
-        type: 'play',
-        sourcePlayerIdx: 0,
-        sourceCardId: 'yA',
-        targetPlayerIdx: 0,
-        targetCardId: 'yB',
-        result: expect.objectContaining({ outcome: 'invalid-pick' }),
-      })
+      expect(gameStateManager.state.history.length).toBe(historyLength)
     })
     it('yellow: only 2 yellow cards in game, both in same player, both picked from self, both are revealed', () => {
       // Setup: player 0 has 2 yellow cards, no other yellow cards in game

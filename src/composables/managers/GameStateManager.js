@@ -237,7 +237,7 @@ export function useGameStateManager() {
         revealed: [],
         infoToken: false,
       }
-      return logAndReturn(result)
+      return result
     }
     const players = gameStateInstance.players
     if (sourcePlayerIdx == null) return invalidPick()
@@ -374,6 +374,10 @@ export function useGameStateManager() {
       })
     }
     if (sourceCard.number !== targetCard.number) {
+      if (sourcePlayerIdx === targetPlayerIdx) {
+        // Cannot pick two cards from the same player
+        return invalidPick()
+      }
       gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
       targetCard.infoToken = true
       infoToken = true
