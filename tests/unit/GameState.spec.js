@@ -425,7 +425,6 @@ describe('GameState composable', () => {
       // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
 
       const gs = new GameState({ players: [player] })
-      console.log(gs.candidatesForSlot(player, 0))
 
       // As the result should be increasing or equal, there is in fact only one possibility
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
@@ -458,7 +457,6 @@ describe('GameState composable', () => {
       // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
 
       const gs = new GameState({ players: [player], yellowWires: [yellow1] })
-      console.log(gs.candidatesForSlot(player, 0))
 
       // As the result should be increasing or equal, there is in fact only one possibility
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
@@ -492,11 +490,9 @@ describe('GameState composable', () => {
       // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
 
       const gs = new GameState({ players: [player], yellowWires: [yellow1, yellow2] })
-      console.log(gs.candidatesForSlot(player, 0))
 
       // As the result should be increasing or equal, there is in fact only one possibility
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
-      console.log(res[0], res[1], res[2])
 
       expect(res[0].slots.length).toEqual(1)
       expect(res[0].slots[0].value).toEqual('1')
@@ -525,7 +521,6 @@ describe('GameState composable', () => {
       // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
 
       const gs = new GameState({ players: [player], redWires: [red1] })
-      console.log(gs.candidatesForSlot(player, 0))
 
       // As the result should be increasing or equal, there is in fact only one possibility
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
@@ -541,6 +536,50 @@ describe('GameState composable', () => {
       expect(res[2].slots.length).toEqual(1)
       expect(res[2].slots[0].value).toEqual('3')
       expect(res[2].slots[0].probability).toEqual(1)
+    })
+
+    it('uses known wires to improve candidate selection', () => {
+      const c1 = { id: 1, color: 'blue', number: 1, revealed: true }
+      const c2 = { id: 2, color: 'blue', number: 2 }
+      const c3 = { id: 3, color: 'blue', number: 3 }
+      const c4 = { id: 4, color: 'blue', number: 4 }
+      const player1 = {
+        id: 1,
+        hand: [c1, c2],
+        knownWires: [c2],
+      }
+      const player2 = {
+        id: 2,
+        hand: [c3, c4],
+        knownWires: [c3],
+      }
+      // 3 slots, all can be 1, 2, or 3, but only one of each
+      const slotPoss = [
+        { player: player1, card: player1.hand[0], candidates: new Set() },
+        { player: player1, card: player1.hand[1], candidates: new Set([2, 3, 4]) },
+        { player: player2, card: player2.hand[0], candidates: new Set([2, 3]) },
+        { player: player2, card: player2.hand[1], candidates: new Set([2, 3, 4]) },
+      ]
+      // Simulate a game state with 1 blue 1, 1 blue 2, 1 blue 3, and a player with 3 slots
+
+      const gs = new GameState({ players: [player1, player2] })
+
+      // As the result should be increasing or equal, there is in fact only one possibility
+      const res = gs.monteCarloSlotProbabilities(slotPoss, null, 10)
+
+      expect(res[0].slots.length).toEqual(0)
+
+      expect(res[1].slots.length).toEqual(1)
+      expect(res[1].slots[0].value).toEqual('2')
+      expect(res[1].slots[0].probability).toEqual(1)
+
+      expect(res[2].slots.length).toEqual(1)
+      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].probability).toEqual(1)
+
+      expect(res[3].slots.length).toEqual(1)
+      expect(res[3].slots[0].value).toEqual('4')
+      expect(res[3].slots[0].probability).toEqual(1)
     })
   })
 })

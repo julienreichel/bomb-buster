@@ -278,17 +278,52 @@ export default class GameState {
       let minVal = 1
       let currentPlayerId = null
       const assignment = Array(numSlots)
+      // --- Assign knownCards to random valid slots for each player ---
+      // Group slots by player
+      const playerSlotIndices = {}
+      for (let s = 0; s < numSlots; ++s) {
+        const pid = slotSets[s].player.id
+
+        if (!slotSets[s].player.knownWires) continue // No known cards for this player
+        if (!playerSlotIndices[pid]) playerSlotIndices[pid] = []
+        playerSlotIndices[pid].push(s)
+      }
+
+      // For each player, assign their knownCards
+      Object.entries(playerSlotIndices).forEach(([, slots]) => {
+        const knownWires = [...(slotSets[slots[0]].player.knownWires || [])]
+        knownWires.forEach((knownCard) => {
+          if (knownCard.color === 'yellow') {
+            // not supported yet
+            return
+          }
+          // Find all slots for this player that accept this knownCard
+          const validSlots = slots.filter(
+            (s) => !assignment[s] && slotSets[s].candidates.has(knownCard.number),
+          )
+          if (validSlots.length) {
+            // Pick one at random
+            const pickIdx = validSlots[Math.floor(Math.random() * validSlots.length)]
+            assignment[pickIdx] = knownCard.number
+            // Remove the card from shuffled
+            const removeIdx = shuffled.findIndex((c) => c.number === knownCard.number)
+            if (removeIdx !== -1) shuffled.splice(removeIdx, 1)
+          }
+        })
+      })
+      // --- End knownCards assignment ---
       for (let s = 0; s < numSlots; ++s) {
         if (slotSets[s].candidates.size === 0) {
-          assignment[s] = null // No candidates, skip this slot
           continue
         }
+        if (assignment[s]) continue // Already assigned by knownCards
         // Find a value in shuffled that is in slotSets[s]
         let foundIdx = -1
         if (slotSets[s].player.id !== currentPlayerId) {
           currentPlayerId = slotSets[s].player.id
           minVal = 1
         }
+
         for (let k = 0; k < shuffled.length; ++k) {
           const value = shuffled[k].number
           if (value >= minVal && slotSets[s].candidates.has(value)) {
@@ -310,6 +345,7 @@ export default class GameState {
       // Accumulate
       for (let s = 0; s < numSlots; ++s) {
         const v = assignment[s]
+        if (v === null || v === undefined) continue // No candidates, skip this slot
         slotValueCounts[s][v] = (slotValueCounts[s][v] || 0) + 1
       }
     }
