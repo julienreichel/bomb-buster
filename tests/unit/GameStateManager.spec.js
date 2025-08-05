@@ -112,9 +112,9 @@ describe('useGameStateManager composable', () => {
     beforeEach(() => {
       // Set up 3 players with empty hands
       gameStateManager.state.players = [
-        { id: 0, hand: [], isAI: false, name: 'Human' },
-        { id: 1, hand: [], isAI: true, name: 'AI 2' },
-        { id: 2, hand: [], isAI: true, name: 'AI 3' },
+        { id: 0, hand: [], isAI: false, name: 'Human', knownWires: [] },
+        { id: 1, hand: [], isAI: true, name: 'AI 2', knownWires: [] },
+        { id: 2, hand: [], isAI: true, name: 'AI 3', knownWires: [] },
       ]
       gameStateManager.state.detonatorDial = 3
     })
@@ -340,6 +340,7 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [blueB]
       gameStateManager.state.detonatorDial = 3
+
       const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'bA',
@@ -358,6 +359,7 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'bB',
         result: expect.objectContaining({ outcome: 'miss' }),
       })
+      expect(gameStateManager.state.players[0].knownWires).toEqual([blueA])
     })
 
     it('blue match reveals both cards', () => {
@@ -365,6 +367,7 @@ describe('useGameStateManager composable', () => {
       const blueB = { id: 'bB', color: 'blue', number: 5 }
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [blueB]
+      gameStateManager.state.players[0].knownWires = [blueA]
       const result = gameStateManager.playRound({
         sourcePlayerIdx: 0,
         sourceCardId: 'bA',
@@ -383,6 +386,41 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'bB',
         result: expect.objectContaining({ outcome: 'match-blue' }),
       })
+    })
+
+    it('reset known card if picking the card', () => {
+      const blueA = { id: 'bA', color: 'blue', number: 5 }
+      const blueB = { id: 'bB', color: 'blue', number: 5 }
+      gameStateManager.state.players[0].hand = [blueA]
+      gameStateManager.state.players[1].hand = [blueB]
+      gameStateManager.state.players[1].knownWires = [blueB]
+      gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 1,
+        targetCardId: 'bB',
+      })
+
+      expect(gameStateManager.state.players[0].knownWires).toEqual([])
+    })
+
+    it('reset known card if picking the same value but different card', () => {
+      const blueA = { id: 'bA', color: 'blue', number: 5, revealed: false }
+      const blueB = { id: 'bB', color: 'blue', number: 5, revealed: false }
+      const blueC = { id: 'bC', color: 'blue', number: 5, revealed: false }
+      gameStateManager.state.players[0].hand = [blueA]
+      gameStateManager.state.players[1].hand = [blueB, blueC]
+      gameStateManager.state.players[1].knownWires = [blueC]
+      gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'bA',
+        targetPlayerIdx: 1,
+        targetCardId: 'bB',
+      })
+      expect(blueA.revealed).toBe(true)
+      expect(blueB.revealed).toBe(true)
+      expect(blueC.revealed).toBe(false)
+      expect(gameStateManager.state.players[0].knownWires).toEqual([])
     })
 
     it('yellow match reveals both cards', () => {

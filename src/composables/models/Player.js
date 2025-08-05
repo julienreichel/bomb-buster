@@ -4,6 +4,7 @@ export class Player {
     this.id = id
     this.name = name
     this.hand = hand // Array of WireTile
+    this.knownWires = [] // Array of WireTile known to this player
   }
   // Placeholder for pickCard
   async pickCard() {
@@ -241,7 +242,6 @@ export class AIPlayer extends Player {
         const redSlot = p.slots.find((s) => s.color === 'red')
         if (target && redSlot && redSlot?.probability > target.probability / 4) {
           // Most risky pick allowed: target 80%, red 20%
-          console.log('Skipping target with high red probability:', p.slots)
           return
         }
         if (target && target.probability > bestProb) {

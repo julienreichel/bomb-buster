@@ -218,6 +218,17 @@ export function useGameStateManager() {
    * @param {string} targetCardId
    * @returns {Object} result { outcome, detonatorDial, revealed, infoToken }
    */
+  function revealCardAndRemoveKnown(player, card) {
+    card.revealed = true
+    if (Array.isArray(player.knownWires)) {
+      const idx = player.knownWires.findIndex(
+        (w) => w.number === card.number || (w.color === card.color && w.color !== 'blue'),
+      )
+      if (idx !== -1) {
+        player.knownWires.splice(idx, 1)
+      }
+    }
+  }
   function playRound({ sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId }) {
     function logAndReturn(result) {
       gameStateInstance.history.push({
@@ -254,7 +265,7 @@ export function useGameStateManager() {
       if (allRevealed) {
         let toReveal = []
         for (const card of playerRedCards) {
-          card.revealed = true
+          revealCardAndRemoveKnown(sourcePlayer, card)
           toReveal.push(card.id)
         }
         return logAndReturn({
@@ -298,15 +309,15 @@ export function useGameStateManager() {
         // Both cards from same player: reveal all blue cards with this value in that hand
         for (const card of sourcePlayer.hand) {
           if (card.color === 'blue' && card.number === value) {
-            card.revealed = true
+            revealCardAndRemoveKnown(sourcePlayer, card)
             toReveal.push(card.id)
           }
         }
       } else {
         // Cards from different players: only reveal the selected cards
-        sourceCard.revealed = true
+        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
         toReveal.push(sourceCard.id)
-        targetCard.revealed = true
+        revealCardAndRemoveKnown(targetPlayer, targetCard)
         toReveal.push(targetCard.id)
       }
       outcome = 'match-blue'
@@ -339,15 +350,15 @@ export function useGameStateManager() {
         // Both cards from same player: reveal all yellow cards in that hand
         for (const card of sourcePlayer.hand) {
           if (card.color === 'yellow') {
-            card.revealed = true
+            revealCardAndRemoveKnown(sourcePlayer, card)
             toReveal.push(card.id)
           }
         }
       } else {
         // Cards from different players: only reveal the selected cards
-        sourceCard.revealed = true
+        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
         toReveal.push(sourceCard.id)
-        targetCard.revealed = true
+        revealCardAndRemoveKnown(targetPlayer, targetCard)
         toReveal.push(targetCard.id)
       }
       outcome = 'match-yellow'
@@ -362,7 +373,7 @@ export function useGameStateManager() {
 
     // Previous rules: red, miss, etc.
     if (targetCard.color === 'red') {
-      targetCard.revealed = true
+      revealCardAndRemoveKnown(targetPlayer, targetCard)
       gameStateInstance.detonatorDial = 0
       outcome = 'hit-red'
       revealed = [targetCard.id]
@@ -383,6 +394,7 @@ export function useGameStateManager() {
       infoToken = true
       outcome = 'miss'
       revealed = []
+      sourcePlayer.knownWires.push(sourceCard) // Add to known wires
       return logAndReturn({
         outcome,
         detonatorDial: gameStateInstance.detonatorDial,
