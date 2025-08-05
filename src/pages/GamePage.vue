@@ -49,13 +49,13 @@
           </div>
           <div class="row q-gutter-md">
             <player-deck
-              v-for="player in otherPlayers"
+              v-for="(player, idx) in otherPlayers"
               :key="player.id"
               :player="player"
               :size="'small'"
               :visible="false"
               :selectable="isPlayPhase && isHumanTurn && !!playSelection.sourceCard"
-              :candidates="showCandidates ? getPlayerCandidates(player) : undefined"
+              :candidates="showCandidates ? allCandidates[idx] : undefined"
               @pick="(card) => onHumanPlayPick(card, player.id)"
             />
           </div>
@@ -248,6 +248,22 @@ function getPlayerCandidates(player) {
   if (!state || !state.players) return []
   return player.hand.map((card, idx) => state.candidatesForSlot(player, idx, selectedPlayer.value))
 }
+
+const allCandidates = computed(() => {
+  if (!state || !state.players) return []
+  const allCandidates = otherPlayers.value.map((player) => getPlayerCandidates(player))
+  const slotSets = allCandidates.flatMap((candidates, idx) =>
+    candidates.map((candidates) => ({ candidates, player: otherPlayers.value[idx] })),
+  )
+  const probabilities = state.monteCarloSlotProbabilities(slotSets, selectedPlayer.value, 10000)
+  let idx = 0
+  allCandidates.forEach((candidates) => {
+    candidates.forEach((candidate) => {
+      candidate.probability = probabilities[idx++]
+    })
+  })
+  return allCandidates
+})
 
 const route = useRoute()
 const numPlayers = computed(() => parseInt(route.query.numPlayers) || 4)

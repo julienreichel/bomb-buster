@@ -28,9 +28,9 @@
           </span>
         </div>
         <div class="text-caption">
-          <span v-if="candidates.mostProbable && candidates.size > 1">
-            ({{ (candidates.mostProbable.probability * 100).toFixed(1) }}%)
-            {{ candidates.mostProbable.value }}
+          <span v-if="candidates.probability?.slots[0]">
+            ({{ (candidates.probability.slots[0].probability * 100).toFixed(1) }}%)
+            {{ candidates.probability.slots[0].value }}
           </span>
         </div>
       </template>

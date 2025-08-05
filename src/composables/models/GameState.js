@@ -128,6 +128,9 @@ export default class GameState {
    * @param {Object} [currentPlayer] - If provided, all cards of this player are considered visible
    */
   candidatesForSlot(player, idx, currentPlayer = null) {
+    const card = player.hand[idx]
+    if (card.revealed || card.infoToken) return new Set()
+
     // Build a set of card ids for currentPlayer if provided
     const currentPlayerCardIds = currentPlayer ? new Set(currentPlayer.hand.map((c) => c.id)) : null
 
@@ -171,8 +174,8 @@ export default class GameState {
         if (
           !wire.revealed &&
           !currentPlayerCardIds?.has(wire.id) &&
-          L < wire.number &&
-          wire.number < U
+          L <= wire.number &&
+          wire.number <= U
         ) {
           S.add(wire.number)
         }
@@ -184,8 +187,8 @@ export default class GameState {
         if (
           !wire.revealed &&
           !currentPlayerCardIds?.has(wire.id) &&
-          L < wire.number &&
-          wire.number < U
+          L <= wire.number &&
+          wire.number <= U
         ) {
           S.add(wire.number)
         }
@@ -204,6 +207,7 @@ export default class GameState {
    */
   monteCarloSlotProbabilities(slotSets, currentPlayer = null, N = 100) {
     const numSlots = slotSets.length
+    const numEmptySlots = slotSets.filter((s) => s.candidates.size === 0).length
     // Build a set of card ids for currentPlayer if provided
     const currentPlayerCardIds = currentPlayer ? new Set(currentPlayer.hand.map((c) => c.id)) : null
 
@@ -221,6 +225,18 @@ export default class GameState {
       if (c.color === 'yellow' && !isVisible) yellowCount++
       if (c.color === 'red' && !isVisible) redCount++
     }
+    const yellowPool = []
+    for (const y of this.yellowWires) {
+      if (!y.revealed && !y.infoToken && !currentPlayerCardIds?.has(y.id)) {
+        yellowPool.push(y)
+      }
+    }
+    const redPool = []
+    for (const r of this.redWires) {
+      if (!r.revealed && !r.infoToken && !currentPlayerCardIds?.has(r.id)) {
+        redPool.push(r)
+      }
+    }
     pool.sort((a, b) => a.number - b.number) // Sort by number ascending
     // Monte Carlo sampling
     const slotValueCounts = Array(numSlots)
@@ -234,16 +250,16 @@ export default class GameState {
       let randomRed = []
       if (yellowCount) {
         // lets put yellowMax - yellowCount yellow wires in the pool
-        randomYellow = [...this.yellowWires].sort(() => Math.random() - 0.5).slice(0, yellowCount)
+        randomYellow = [...yellowPool].sort(() => Math.random() - 0.5).slice(0, yellowCount)
       }
       if (redCount) {
-        randomRed = [...this.redWires].sort(() => Math.random() - 0.5).slice(0, redCount)
+        randomRed = [...redPool].sort(() => Math.random() - 0.5).slice(0, redCount)
       }
       // shuffle, but give some preference to lower numbers
       let shuffled = [...pool, ...randomYellow, ...randomRed].sort(
         (a, b) => a.number - b.number + Math.random() * 10 - 5,
       )
-      if (shuffled.length < numSlots) {
+      if (shuffled.length < numSlots - numEmptySlots) {
         console.warn(
           'Not enough cards in pool for Monte Carlo sampling:',
           'pool',
@@ -255,6 +271,7 @@ export default class GameState {
           'needed',
           numSlots,
         )
+        break
       }
       // Try to assign to slots
       let valid = true
@@ -262,6 +279,10 @@ export default class GameState {
       let currentPlayerId = null
       const assignment = Array(numSlots)
       for (let s = 0; s < numSlots; ++s) {
+        if (slotSets[s].candidates.size === 0) {
+          assignment[s] = null // No candidates, skip this slot
+          continue
+        }
         // Find a value in shuffled that is in slotSets[s]
         let foundIdx = -1
         if (slotSets[s].player.id !== currentPlayerId) {
@@ -305,7 +326,7 @@ export default class GameState {
         const color = digit === 0 ? 'blue' : digit === 1 ? 'yellow' : 'red'
         slots.push({ value: val, count, color })
       })
-      slots.sort((a, b) => a.count - b.count)
+      slots.sort((a, b) => b.count - a.count)
 
       return {
         slots: slots.map((s) => ({

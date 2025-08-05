@@ -269,7 +269,7 @@ describe('GameState composable', () => {
       expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([2, 3, 4, 5, 6, 6.5, 7, 7.5, 8]))
     })
 
-    it('only one candidate if token', () => {
+    it('no candidate if token', () => {
       const player = {
         hand: [
           { id: 1, color: 'blue', number: 2, revealed: true },
@@ -279,7 +279,7 @@ describe('GameState composable', () => {
       }
       const gs = new GameState({ players: [player], yellowWires: [], redWires: [] })
       // Slot 1: left 2, right 8, but blue 4 is already visible, so no blue left
-      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set([4]))
+      expect(gs.candidatesForSlot(player, 1)).toEqual(new Set())
     })
 
     it('blue candidate given curent player has all 4', () => {
@@ -353,6 +353,57 @@ describe('GameState composable', () => {
 
       const result = gs.candidatesForSlot(player, 1, player2)
       expect(result).toEqual(new Set([2]))
+    })
+    it('find the yellow as expected', () => {
+      const y1 = { id: 34, color: 'yellow', number: 4.1 }
+      const player1 = {
+        hand: [
+          { id: 1, color: 'blue', number: 2, revealed: true },
+          { id: 2, color: 'blue', number: 5 },
+          { id: 3, color: 'blue', number: 6, revealed: true },
+          { id: 4, color: 'blue', number: 6, revealed: true },
+        ],
+      }
+      const player2 = {
+        hand: [
+          { id: 23, color: 'blue', number: 3, revealed: true },
+          { id: 24, color: 'blue', number: 4, revealed: true },
+          { id: 25, color: 'blue', number: 5, revealed: true },
+        ],
+      }
+      const player3 = {
+        hand: [
+          { id: 30, color: 'blue', number: 2, revealed: true },
+          { id: 31, color: 'blue', number: 3, revealed: true },
+          { id: 32, color: 'blue', number: 4 },
+          { id: 33, color: 'blue', number: 4, revealed: true },
+          y1,
+          { id: 35, color: 'blue', number: 5 },
+          { id: 36, color: 'blue', number: 6, revealed: true },
+          { id: 37, color: 'blue', number: 6, revealed: true },
+        ],
+      }
+      const player4 = {
+        hand: [
+          { id: 41, color: 'blue', number: 3, revealed: true },
+          { id: 42, color: 'blue', number: 3, revealed: true },
+          { id: 43, color: 'blue', number: 4, infoToken: true },
+          { id: 44, color: 'blue', number: 5, revealed: true },
+        ],
+      }
+      const gs = new GameState({
+        players: [player1, player2, player3, player4],
+        yellowWires: [y1],
+        redWires: [],
+      })
+      const result2 = gs.candidatesForSlot(player3, 2, player1)
+      expect(result2).toEqual(new Set([4]))
+
+      const result4 = gs.candidatesForSlot(player3, 4, player1)
+      expect(result4).toEqual(new Set([4, 4.1]))
+
+      const result5 = gs.candidatesForSlot(player3, 5, player1)
+      expect(result5).toEqual(new Set([4.1, 5]))
     })
   })
   describe('monteCarloSlotProbabilities', () => {

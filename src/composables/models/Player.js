@@ -202,7 +202,7 @@ export class AIPlayer extends Player {
       .filter((other) => other.id !== this.id)
       .forEach((other) => {
         other.hand.forEach((card, idx) => {
-          if (card.revealed) return
+          if (card.revealed || card.infoToken) return
           const candidates = gameState.candidatesForSlot(other, idx, this)
           slotSets.push({ player: other, card, candidates })
           if (candidates.size === 1) {
