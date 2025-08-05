@@ -230,6 +230,7 @@ export class AIPlayer extends Player {
 
     const myCards = this.hand.filter((c) => !c.revealed)
     let bestProb = 0
+    let slot = null
     myCards.forEach((card) => {
       probabilities.forEach((p) => {
         const target = p.slots.find(
@@ -237,8 +238,15 @@ export class AIPlayer extends Player {
             Number(s.value) === Number(card.number) ||
             (card.color === 'yellow' && s.color === 'yellow'),
         )
+        const redSlot = p.slots.find((s) => s.color === 'red')
+        if (target && redSlot && redSlot?.probability > target.probability / 4) {
+          // Most risky pick allowed: target 80%, red 20%
+          console.log('Skipping target with high red probability:', p.slots)
+          return
+        }
         if (target && target.probability > bestProb) {
           bestProb = target.probability
+          slot = p.slots
           best = {
             sourcePlayerIdx: this.id,
             sourceCardId: card.id,
@@ -248,7 +256,7 @@ export class AIPlayer extends Player {
         }
       })
     })
-    console.log('Probabilistic match found:', bestProb)
+    console.log('Probabilistic match found:', bestProb, slot)
     return best || null
   }
 
