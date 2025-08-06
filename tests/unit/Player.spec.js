@@ -127,7 +127,7 @@ describe('Player composable', () => {
   })
 
   describe('pickPlayCards', () => {
-    it('AIPlayer with 6 cards, 4 of them the same, picks two matching cards', () => {
+    it('picks two matching cards when 4 cards are present', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',
@@ -147,7 +147,7 @@ describe('Player composable', () => {
       expect(result.sourceCardId).not.toBe(result.targetCardId)
     })
 
-    it('AIPlayer with 3 matching, 1 revealed, 4th in another player and revealed', () => {
+    it('picks two of a kind, when other 2 are revealed (player has 3)', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',
@@ -173,14 +173,47 @@ describe('Player composable', () => {
       expect(result.targetPlayerIdx).toBe(0)
     })
 
+    it('picks two of a kind, when other 2 are revealed (and there is a red in the game)', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b4', color: 'blue', number: 2 },
+          { id: 'b5', color: 'blue', number: 3 },
+          { id: 'b6', color: 'blue', number: 4 },
+          { id: 'b1', color: 'blue', number: 7 },
+          { id: 'b2', color: 'blue', number: 7 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'r1', color: 'red', number: 2.1 },
+          { id: 'b7', color: 'blue', number: 7, revealed: true },
+        ],
+      })
+      const other2 = new AIPlayer({
+        id: 2,
+        name: 'Other2',
+        hand: [{ id: 'b8', color: 'blue', number: 7, revealed: true }],
+      })
+      const gs = new GameState({ players: [ai, other, other2] })
+      const result = ai.pickPlayCards(gs)
+      expect([result.sourceCardId, result.targetCardId]).toContain('b1')
+      expect([result.sourceCardId, result.targetCardId]).toContain('b2')
+      expect(result.sourcePlayerIdx).toBe(0)
+      expect(result.targetPlayerIdx).toBe(0)
+    })
+
     it('AIPlayer with 2 yellow cards, no other players have yellow, picks both yellow', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',
         hand: [
           { id: 'y1', color: 'yellow', number: 1.1 },
-          { id: 'y2', color: 'yellow', number: 2.1 },
           { id: 'b1', color: 'blue', number: 2 },
+          { id: 'y2', color: 'yellow', number: 2.1 },
           { id: 'b2', color: 'blue', number: 3 },
           { id: 'b3', color: 'blue', number: 4 },
           { id: 'b4', color: 'blue', number: 5 },
@@ -193,6 +226,32 @@ describe('Player composable', () => {
       expect([result.sourceCardId, result.targetCardId]).toContain('y2')
       expect(result.sourcePlayerIdx).toBe(0)
       expect(result.targetPlayerIdx).toBe(0)
+    })
+
+    it('does not pick 2 red cards', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'r1', color: 'red', number: 1.5 },
+          { id: 'b1', color: 'blue', number: 2 },
+          { id: 'r2', color: 'red', number: 2.5 },
+          { id: 'b2', color: 'blue', number: 3 },
+          { id: 'b3', color: 'blue', number: 4 },
+          { id: 'b4', color: 'blue', number: 5 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [{ id: 'b5', color: 'blue', number: 5, infoToken: true }],
+      })
+      const gs = new GameState({ players: [ai, other] })
+      const result = ai.pickPlayCards(gs)
+      expect(result.sourceCardId).toBe('b4')
+      expect(result.targetCardId).toBe('b5')
+      expect(result.sourcePlayerIdx).toBe(0)
+      expect(result.targetPlayerIdx).toBe(1)
     })
 
     it('AIPlayer with a red card, all 5 blue cards revealed, picks the red card', () => {

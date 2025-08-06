@@ -152,14 +152,16 @@ export class AIPlayer extends Player {
   _pickTwoOfAKind(valueGroups, gameState) {
     const num = Object.keys(valueGroups).find((num) => {
       if (valueGroups[num].length !== 2) return false
+      if (num === 'red') return false // No two of a kind for red
       return gameState.players.every((p) =>
-        p.hand.every(
-          (card) =>
-            (p.id === this.id && valueGroups[num].some((c) => c.id === card.id)) ||
-            (card.number != num && card.color === 'blue') ||
-            (num === 'yellow' && card.color !== num) ||
-            card.revealed,
-        ),
+        p.hand.every((card) => {
+          const isMyCard = p.id === this.id && valueGroups[num].some((c) => c.id === card.id)
+          const isBlueMismatch = card.number != num && card.color === 'blue'
+          const isYellowMismatch = num !== 'blue' && card.color !== num
+          const isRevealed = card.revealed
+          // Check if the card is either my card, a blue mismatch, a yellow mismatch,
+          return isMyCard || isBlueMismatch || isYellowMismatch || isRevealed
+        }),
       )
     })
     if (num) {
