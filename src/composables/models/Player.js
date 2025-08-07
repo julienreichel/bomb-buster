@@ -229,7 +229,7 @@ export class AIPlayer extends Player {
       return best
     }
     // use monteCarloSlotProbabilities
-    const probabilities = gameState.monteCarloSlotProbabilities(slotSets, this, 10000)
+    const probabilities = gameState.monteCarloSlotProbabilities(slotSets, this, 1000)
 
     const myCards = this.hand.filter((c) => !c.revealed)
     let bestProb = 0

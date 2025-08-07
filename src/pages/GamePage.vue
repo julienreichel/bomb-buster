@@ -255,7 +255,7 @@ const allCandidates = computed(() => {
   const slotSets = allCandidates.flatMap((candidates, idx) =>
     candidates.map((candidates) => ({ candidates, player: otherPlayers.value[idx] })),
   )
-  const probabilities = state.monteCarloSlotProbabilities(slotSets, selectedPlayer.value, 10000)
+  const probabilities = state.monteCarloSlotProbabilities(slotSets, selectedPlayer.value, 1000)
   let idx = 0
   allCandidates.forEach((candidates) => {
     candidates.forEach((candidate) => {

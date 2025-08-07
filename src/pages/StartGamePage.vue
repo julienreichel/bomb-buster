@@ -57,7 +57,24 @@
       </q-card-section>
       <q-separator />
       <q-card-actions align="right">
+        <q-input
+          v-if="!hasHuman"
+          v-model.number="numRuns"
+          type="number"
+          label="Number of Runs"
+          :min="1"
+          :max="1000"
+          dense
+          style="width: 120px; margin-right: 16px"
+        />
         <q-btn color="primary" label="Start Game" @click="startGame" :disable="!canStart" />
+        <q-btn
+          v-if="!hasHuman"
+          color="secondary"
+          label="Run Simulation"
+          @click="runSimulation"
+          :disable="!canStart"
+        />
       </q-card-actions>
     </q-card>
   </q-page>
@@ -75,6 +92,7 @@ const redCreated = ref(0)
 const redOnBoard = ref(0)
 
 const router = useRouter()
+const numRuns = ref(10)
 
 function onYellowCreatedChange(val) {
   if (val === 1) {
@@ -120,6 +138,20 @@ function startGame() {
       yellowOnBoard: yellowOnBoard.value,
       redCreated: redCreated.value,
       redOnBoard: redOnBoard.value,
+    },
+  })
+}
+
+function runSimulation() {
+  router.push({
+    path: '/simulate',
+    query: {
+      numPlayers: numPlayers.value,
+      yellowCreated: yellowCreated.value,
+      yellowOnBoard: yellowOnBoard.value,
+      redCreated: redCreated.value,
+      redOnBoard: redOnBoard.value,
+      numRuns: numRuns.value,
     },
   })
 }
