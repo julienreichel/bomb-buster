@@ -532,7 +532,49 @@ describe('Player composable', () => {
       expect(result.targetCardId).toBe('b11')
     })
 
-    it('AIPlayer do not picks potential red card', () => {
+    it('do not picks potential red card', () => {
+      const r1 = { id: 'r1', color: 'red', number: 3.5 }
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b1', color: 'blue', number: 3, revealed: true },
+          { id: 'b2', color: 'blue', number: 3 },
+          { id: 'b3', color: 'blue', number: 4, revealed: true },
+          { id: 'b4', color: 'blue', number: 5, revealed: true },
+          { id: 'b5', color: 'blue', number: 6 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b11', color: 'blue', number: 2, revealed: true },
+          { id: 'b12', color: 'blue', number: 3 },
+          { id: 'b13', color: 'blue', number: 3, revealed: true },
+          r1,
+          { id: 'b14', color: 'blue', number: 4 },
+          { id: 'b15', color: 'blue', number: 4, revealed: true },
+        ],
+      })
+      const other2 = new AIPlayer({
+        id: 2,
+        name: 'Other2',
+        hand: [
+          { id: 'b21', color: 'blue', number: 2 },
+          { id: 'b22', color: 'blue', number: 2 },
+          { id: 'b23', color: 'blue', number: 2 },
+          { id: 'b24', color: 'blue', number: 4, revealed: true },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other, other2], redWires: [r1] })
+      const result = ai.pickPlayCards(gs)
+      expect(result.sourceCardId).toBe('b2')
+      expect(result.targetPlayerIdx).toBe(1)
+      expect(result.targetCardId).toBe('b12')
+    })
+
+    it('do not picks potential red card unles it is the last one', () => {
       const r1 = { id: 'r1', color: 'red', number: 3.5 }
       const ai = new AIPlayer({
         id: 0,
@@ -570,7 +612,7 @@ describe('Player composable', () => {
       const result = ai.pickPlayCards(gs)
       expect(result.sourceCardId).toBe('b2')
       expect(result.targetPlayerIdx).toBe(1)
-      expect(result.targetCardId).toBe('b12')
+      expect(result.targetCardId).toBe('r1')
     })
   })
 })
