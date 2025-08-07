@@ -157,7 +157,7 @@ export class AIPlayer extends Player {
         p.hand.every((card) => {
           const isMyCard = p.id === this.id && valueGroups[num].some((c) => c.id === card.id)
           const isBlueMismatch = card.number != num && card.color === 'blue'
-          const isYellowMismatch = num !== 'blue' && card.color !== num
+          const isYellowMismatch = card.color !== 'blue' && card.color !== num
           const isRevealed = card.revealed
           // Check if the card is either my card, a blue mismatch, a yellow mismatch,
           return isMyCard || isBlueMismatch || isYellowMismatch || isRevealed
