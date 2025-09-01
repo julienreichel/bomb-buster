@@ -62,31 +62,12 @@
         </div>
       </div>
     </div>
-    <!-- Move History Section -->
-    <div class="q-mt-xl">
-      <div class="row items-center q-gutter-sm q-mb-sm">
-        <div class="text-h6">Move History</div>
-        <q-toggle v-model="showFullHistory" label="Show Full History" color="primary" dense />
-      </div>
-      <q-list bordered separator class="bg-grey-1 rounded-borders">
-        <q-item v-for="(move, idx) in movesToShow" :key="idx">
-          <q-item-section>
-            <span class="text-body2">{{ moveSummary(move) }}</span>
-          </q-item-section>
-        </q-item>
-        <q-item v-if="moveHistory.length === 0">
-          <q-item-section>
-            <span class="text-grey">No moves yet.</span>
-          </q-item-section>
-        </q-item>
-      </q-list>
-      <div
-        v-if="!showFullHistory && moveHistory.length > movesToShow.length"
-        class="q-mt-xs text-caption text-grey"
-      >
-        Showing last {{ movesToShow.length }} of {{ moveHistory.length }} moves
-      </div>
-    </div>
+    
+    <!-- Game History Component -->
+    <game-history 
+      :move-history="moveHistory" 
+      :players="players" 
+    />
   </q-page>
 </template>
 
@@ -98,6 +79,7 @@ import { useGameStateManager } from '../composables/managers/GameStateManager.js
 import PlayerDeck from '../components/PlayerDeck.vue'
 import WireTracker from '../components/WireTracker.vue'
 import DetonatorDial from '../components/DetonatorDial.vue'
+import GameHistory from '../components/GameHistory.vue'
 
 const { state, createNewGame, advancePickRound, advancePlayRound, playRound } =
   useGameStateManager()
@@ -124,34 +106,7 @@ const playMessage = computed(() => {
 })
 
 // --- Move History UI ---
-const showFullHistory = ref(false)
 const moveHistory = computed(() => state.history || [])
-const movesToShow = computed(() => {
-  if (showFullHistory.value) return moveHistory.value
-  const n = players.value.length || 4
-  return moveHistory.value.slice(-n)
-})
-
-function moveSummary(move) {
-  if (!move) return ''
-  const { type, sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId, result } = move
-  const src = players.value[sourcePlayerIdx]?.name ?? `P${sourcePlayerIdx}`
-  const tgt =
-    targetPlayerIdx != null && players.value[targetPlayerIdx]
-      ? players.value[targetPlayerIdx].name
-      : null
-  let desc = ''
-  if (type === 'play') {
-    desc = `${src} played ${sourceCardId}`
-    if (tgt && targetCardId) desc += ` vs ${tgt}'s ${targetCardId}`
-    if (result?.outcome) desc += ` → ${result.outcome.replace(/-/g, ' ')}`
-    if (result?.infoToken) desc += ' [info token]'
-    if (typeof result?.detonatorDial === 'number') desc += ` [dial: ${result.detonatorDial}]`
-  } else {
-    desc = `${src} action`
-  }
-  return desc
-}
 
 function handlePlayerDeckPick(card) {
   if (!isHumanTurn.value) return
