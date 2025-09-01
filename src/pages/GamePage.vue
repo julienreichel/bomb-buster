@@ -241,7 +241,7 @@ const initialized = computed(
     Array.isArray(selectedPlayer.value.hand),
 )
 
-const showCandidates = ref(true)
+const showCandidates = ref(false)
 
 // Compute candidates for each card in a player's hand
 function getPlayerCandidates(player) {
