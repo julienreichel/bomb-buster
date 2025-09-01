@@ -1,4 +1,16 @@
-import { Quasar, QCard, QCardSection, QBadge, QIcon } from 'quasar'
+import {
+  Quasar,
+  QCard,
+  QCardSection,
+  QBadge,
+  QIcon,
+  QBtn,
+  QSpinner,
+  QToggle,
+  QList,
+  QItem,
+  QItemSection,
+} from 'quasar'
 
 export const quasarOptions = {
   config: {},
@@ -8,6 +20,12 @@ export const quasarOptions = {
     QCardSection,
     QBadge,
     QIcon,
+    QBtn,
+    QSpinner,
+    QToggle,
+    QList,
+    QItem,
+    QItemSection,
   },
 }
 
