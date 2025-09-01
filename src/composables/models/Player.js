@@ -5,6 +5,7 @@ export class Player {
     this.name = name
     this.hand = hand // Array of WireTile
     this.knownWires = [] // Array of WireTile known to this player
+    this.verbose = false
   }
   // Placeholder for pickCard
   async pickCard() {
@@ -87,28 +88,28 @@ export class AIPlayer extends Player {
     const valueGroups = this._groupByValue(unrevealed)
     const four = this._pickFourOfAKind(valueGroups)
     if (four) {
-      console.log('Picked four of a kind:', four)
+      if (this.verbose) console.log('Picked four of a kind:', four)
       return four
     }
     const two = this._pickTwoOfAKind(valueGroups, gameState)
     if (two) {
-      console.log('Picked two of a kind:', two)
+      if (this.verbose) console.log('Picked two of a kind:', two)
       return two
     }
     const infoToken = this._pickInfoToken(unrevealed, gameState)
     if (infoToken) {
-      console.log('Picked info token:', infoToken)
+      if (this.verbose) console.log('Picked info token:', infoToken)
       return infoToken
     }
     const best = this._pickBestProbability(gameState)
     if (best) {
-      console.log('Picked best probability:', best)
+      if (this.verbose) console.log('Picked best probability:', best)
       return best
     }
     // Fallback: try edge strategy
     const edge = this._pickEdgeStrategy(gameState)
     if (edge) {
-      console.log('Picked edge strategy:', edge)
+      if (this.verbose) console.log('Picked edge strategy:', edge)
       return edge
     }
     return null
@@ -259,7 +260,7 @@ export class AIPlayer extends Player {
         }
       })
     })
-    console.log('Probabilistic match found:', bestProb, slot)
+    if (this.verbose) console.log('Probabilistic match found:', bestProb, slot)
     return best || null
   }
 
