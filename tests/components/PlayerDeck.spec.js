@@ -219,4 +219,21 @@ describe('PlayerDeck Component', () => {
     expect(wireCards).toHaveLength(0)
     expect(wrapper.text()).toContain("Test Player's Hand")
   })
+
+  it('handles wires without id property in known wires', async () => {
+    const player = createTestPlayer('Test Player')
+    player.knownWires = [
+      'wire1', // String wire without id property - tests the || wire fallback
+      { id: 'w1', color: 'blue', number: 5 }, // Normal wire with id
+    ]
+
+    const wrapper = mount(
+      PlayerDeck,
+      withQuasar({
+        props: { player },
+      }),
+    )
+
+    expect(wrapper.text()).toContain('Known wires:')
+  })
 })

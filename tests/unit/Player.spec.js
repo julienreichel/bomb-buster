@@ -617,4 +617,162 @@ describe('Player composable', () => {
       expect(result.targetCardId).toBe('r1')
     })
   })
+
+  describe('_pickEdgeStrategy', () => {
+    it('should use edge strategy when no other options available', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b1', color: 'blue', number: 1 },
+          { id: 'b2', color: 'blue', number: 2 },
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b3', color: 'blue', number: 3 },
+          { id: 'b4', color: 'blue', number: 4 },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBeTruthy()
+      expect(result.sourcePlayerIdx).toBe(0)
+      expect(result.targetPlayerIdx).toBe(1)
+    })
+
+    it('should return null when no cards available', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBe(null)
+    })
+
+    it('should handle first and last edge card selections', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b1', color: 'blue', number: 1, revealed: false }, // lowest value
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2, revealed: false },
+          { id: 'b3', color: 'blue', number: 3, revealed: false },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBeTruthy()
+      expect(result.targetCardId).toBe('b2') // should pick first card
+    })
+
+    it('should handle last edge card selection for high values', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b10', color: 'blue', number: 10, revealed: false }, // highest value
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2, revealed: false },
+          { id: 'b3', color: 'blue', number: 3, revealed: false },
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBeTruthy()
+      expect(result.targetCardId).toBe('b3') // should pick last card
+    })
+
+    it('should fall back to first available cards when no edge found', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [
+          { id: 'b5', color: 'blue', number: 5, revealed: false }, // middle value
+        ],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [{ id: 'b6', color: 'blue', number: 6, revealed: false }],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBeTruthy()
+      expect(result.sourceCardId).toBe('b5')
+      expect(result.targetCardId).toBe('b6')
+    })
+
+    it('should return null when no other players have unrevealed cards', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'b1', color: 'blue', number: 1, revealed: false }],
+      })
+      const other = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'b2', color: 'blue', number: 2, revealed: true }, // all revealed
+        ],
+      })
+      const gs = new GameState({ players: [ai, other] })
+
+      const result = ai._pickEdgeStrategy(gs)
+      expect(result).toBe(null)
+    })
+  })
+
+  describe('_allUnrevealedRed', () => {
+    it('should return true when all unrevealed cards are red', () => {
+      const ai = new AIPlayer({ id: 0, name: 'AI', hand: [] })
+      const redCards = [
+        { id: 'r1', color: 'red', revealed: false },
+        { id: 'r2', color: 'red', revealed: false },
+      ]
+
+      expect(ai._allUnrevealedRed(redCards)).toBe(true)
+    })
+
+    it('should return false when some unrevealed cards are not red', () => {
+      const ai = new AIPlayer({ id: 0, name: 'AI', hand: [] })
+      const mixedCards = [
+        { id: 'r1', color: 'red', revealed: false },
+        { id: 'b1', color: 'blue', revealed: false },
+      ]
+
+      expect(ai._allUnrevealedRed(mixedCards)).toBe(false)
+    })
+
+    it('should return false when array is empty', () => {
+      const ai = new AIPlayer({ id: 0, name: 'AI', hand: [] })
+
+      expect(ai._allUnrevealedRed([])).toBe(false)
+    })
+  })
 })
