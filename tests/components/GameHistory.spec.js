@@ -62,7 +62,7 @@ describe('GameHistory Component', () => {
       }),
     )
 
-    expect(wrapper.text()).toContain('Alice played b5 vs Bob\'s b7 → match [dial: 5]')
+    expect(wrapper.text()).toContain("Alice played b5 vs Bob's b7 → match [dial: 5]")
   })
 
   it('formats move summaries with different outcomes', () => {
@@ -93,7 +93,7 @@ describe('GameHistory Component', () => {
       }),
     )
 
-    expect(wrapper.text()).toContain('Alice played b1 vs Bob\'s b2 → miss [info token] [dial: 4]')
+    expect(wrapper.text()).toContain("Alice played b1 vs Bob's b2 → miss [info token] [dial: 4]")
     expect(wrapper.text()).toContain('Bob played r1 → red wire [dial: 0]')
   })
 

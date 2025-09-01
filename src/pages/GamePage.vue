@@ -62,12 +62,9 @@
         </div>
       </div>
     </div>
-    
+
     <!-- Game History Component -->
-    <game-history 
-      :move-history="moveHistory" 
-      :players="players" 
-    />
+    <game-history :move-history="moveHistory" :players="players" />
   </q-page>
 </template>
 

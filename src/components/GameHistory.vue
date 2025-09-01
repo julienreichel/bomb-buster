@@ -31,12 +31,12 @@ import { ref, computed } from 'vue'
 const props = defineProps({
   moveHistory: {
     type: Array,
-    default: () => []
+    default: () => [],
   },
   players: {
     type: Array,
-    default: () => []
-  }
+    default: () => [],
+  },
 })
 
 const showFullHistory = ref(false)
