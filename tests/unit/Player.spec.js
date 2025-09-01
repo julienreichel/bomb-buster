@@ -399,6 +399,7 @@ describe('Player composable', () => {
           { id: 'b9', color: 'blue', number: 8 },
           { id: 'b10', color: 'blue', number: 8, revealed: true },
           { id: 'b11', color: 'blue', number: 9 },
+          { id: 'b11b', color: 'blue', number: 10 },
         ],
       })
       const other2 = new AIPlayer({
@@ -407,6 +408,7 @@ describe('Player composable', () => {
         hand: [
           { id: 'b12', color: 'blue', number: 7 },
           { id: 'b13', color: 'blue', number: 8 },
+          { id: 'b13b', color: 'blue', number: 10 },
         ],
       })
       const gs = new GameState({ players: [ai, other, other2] })
