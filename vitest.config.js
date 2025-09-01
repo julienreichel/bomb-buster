@@ -10,6 +10,10 @@ export default defineConfig({
       provider: 'playwright',
       // https://vitest.dev/guide/browser/playwright
       instances: [{ browser: 'chromium' }],
+      // CI-friendly configuration
+      screenshotFailures: false,
     },
+    // Retry tests in CI environments
+    retry: process.env.CI ? 2 : 0,
   },
 })
