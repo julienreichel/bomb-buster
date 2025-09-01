@@ -32,13 +32,14 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: |
+          npx playwright install --with-deps chromium
+          npx playwright install chromium --force
 
       - name: Run tests
         run: npm run test --silent -- --run
         env:
           CI: true
-          PLAYWRIGHT_BROWSERS_PATH: 0
           FORCE_COLOR: 1
 
       - name: Coverage
