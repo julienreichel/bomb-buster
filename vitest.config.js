@@ -15,5 +15,27 @@ export default defineConfig({
     },
     // Retry tests in CI environments
     retry: process.env.CI ? 2 : 0,
+    coverage: {
+      provider: 'v8',
+      exclude: [
+        'node_modules/**',
+        'dist/**',
+        'coverage/**',
+        '.quasar/**',
+        '*.config.js',
+        '*.config.ts',
+        'src/App.vue',
+        'eslint.config.js',
+        'postcss.config.js',
+        'quasar.config.js',
+        'vitest.config.js',
+        'jsconfig.json',
+        'public/**',
+        'tests/**',
+        'src/router/**',
+        'src/pages/**',
+        'src/layouts/**',
+      ],
+    },
   },
 })
