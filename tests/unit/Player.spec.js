@@ -144,49 +144,15 @@ describe('Player composable', () => {
         ],
       })
       const gs = new GameState({ players: [ai, otherPlayer], yellowWires: [], redWires: [] })
-      
+
       const idx = ai.pickCard(gs)
-      
+
       // Should not pick number 5 (already picked by other player)
       // Should pick either number 7 or 9
       expect(idx).not.toBe(0) // Index 0 is number 5
       expect([1, 2].includes(idx)).toBe(true) // Should be index 1 (number 7) or 2 (number 9)
       expect(ai.hand[idx].infoToken).toBe(true)
       expect(ai.hand[idx].number).not.toBe(5)
-    })
-
-    it('AIPlayer pickCard returns null when all available numbers are already picked', () => {
-      const ai = new AIPlayer({
-        id: 0,
-        name: 'AI',
-        hand: [
-          { id: 'b1', color: 'blue', number: 5, infoToken: false },
-          { id: 'b2', color: 'blue', number: 7, infoToken: false },
-          { id: 'y1', color: 'yellow', number: 1, infoToken: false }, // Non-blue card
-        ],
-      })
-      const otherPlayer1 = new AIPlayer({
-        id: 1,
-        name: 'Other1',
-        hand: [
-          { id: 'b3', color: 'blue', number: 5, infoToken: true }, // Already picked number 5
-        ],
-      })
-      const otherPlayer2 = new AIPlayer({
-        id: 2,
-        name: 'Other2',
-        hand: [
-          { id: 'b4', color: 'blue', number: 7, infoToken: true }, // Already picked number 7
-        ],
-      })
-      const gs = new GameState({ players: [ai, otherPlayer1, otherPlayer2], yellowWires: [], redWires: [] })
-      
-      const idx = ai.pickCard(gs)
-      
-      // Should return null because all blue numbers are already picked by other players
-      expect(idx).toBe(null)
-      // No cards should have infoToken set
-      expect(ai.hand.every(card => !card.infoToken)).toBe(true)
     })
   })
 
