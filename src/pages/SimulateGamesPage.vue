@@ -47,6 +47,7 @@ const tableColumns = [
   { name: 'players', label: 'Players', field: 'players', align: 'left' },
   { name: 'yellows', label: 'Yellows', field: 'yellows', align: 'left' },
   { name: 'reds', label: 'Reds', field: 'reds', align: 'left' },
+  { name: 'doubleDetector', label: 'Double Detector', field: 'doubleDetector', align: 'left' },
   { name: 'dial5', label: '5', field: 'dial5', align: 'right' },
   { name: 'dial4', label: '4', field: 'dial4', align: 'right' },
   { name: 'dial3', label: '3', field: 'dial3', align: 'right' },
@@ -67,6 +68,7 @@ const tableRows = computed(() => {
       yellowOnBoard.value,
       redCreated.value,
       redOnBoard.value,
+      doubleDetectorEnabled.value,
     )
     let stored = localStorage.getItem(key)
     let stat = stored ? JSON.parse(stored) : null
@@ -82,6 +84,7 @@ const tableRows = computed(() => {
       players: p,
       yellows: `${yellowOnBoard.value} / ${yellowCreated.value}`,
       reds: `${redOnBoard.value} / ${redCreated.value}`,
+      doubleDetector: doubleDetectorEnabled.value ? 'Yes' : 'No',
       dial5: stat?.dialCounts?.[5] || 0,
       dial4: stat?.dialCounts?.[4] || 0,
       dial3: stat?.dialCounts?.[3] || 0,
@@ -133,6 +136,7 @@ function runSimulations() {
           yellowOnBoard: yellowOnBoard.value,
           redCreated: redCreated.value,
           redOnBoard: redOnBoard.value,
+          doubleDetectorEnabled: doubleDetectorEnabled.value,
           totalRuns: 0,
           dialCounts: {},
         }
