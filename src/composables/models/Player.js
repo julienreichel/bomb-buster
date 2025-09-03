@@ -43,6 +43,22 @@ export class AIPlayer extends Player {
       .filter((idx) => idx !== -1)
     if (blueIndexes.length === 0) return null
 
+    // Get numbers already picked by other players (cards with infoToken)
+    const pickedNumbers = new Set()
+    gameState.players.forEach((player) => {
+      if (player.id !== this.id) {
+        player.hand.forEach((card) => {
+          if (card.infoToken && card.color === 'blue') {
+            pickedNumbers.add(card.number)
+          }
+        })
+      }
+    })
+
+    // Filter out blue cards with numbers already picked by other players
+    blueIndexes = blueIndexes.filter((idx) => !pickedNumbers.has(this.hand[idx].number))
+    if (blueIndexes.length === 0) return null
+
     // Rule: if you have 3 blue cards of the same number, only consider those
     const blueNumberCounts = {}
     blueIndexes.forEach((idx) => {
