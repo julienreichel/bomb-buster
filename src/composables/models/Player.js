@@ -1,12 +1,26 @@
 // Player model
+import WireTile from './WireTile.js'
+
 export class Player {
   constructor({ id, name, hand = [], doubleDetectorEnabled = true }) {
     this.id = id
     this.name = name
-    this.hand = hand // Array of WireTile
+    // Convert plain objects to WireTile instances if needed
+    this._hand = []
+    this.hand = hand // Use setter to convert
     this.knownWires = [] // Array of WireTile known to this player
     this.hasDoubleDetector = doubleDetectorEnabled // Global flag to enable/disable double detector feature
     this.verbose = false
+  }
+
+  // Getter for hand
+  get hand() {
+    return this._hand
+  }
+
+  // Setter for hand that converts plain objects to WireTile instances
+  set hand(cards) {
+    this._hand = cards.map((card) => (card instanceof WireTile ? card : new WireTile(card)))
   }
   // Placeholder for pickCard
   async pickCard() {
@@ -22,7 +36,7 @@ export class HumanPlayer extends Player {
   // Set infoToken to true for the picked card
   pickCard(card) {
     const idx = this.hand.findIndex((c) => c.id === card.id)
-    if (idx !== -1 && this.hand[idx].color === 'blue') {
+    if (idx !== -1 && this.hand[idx].isColor('blue')) {
       this.hand[idx].infoToken = true
       return idx
     }
@@ -39,7 +53,7 @@ export class AIPlayer extends Player {
   pickCard(gameState) {
     // Only consider blue cards
     let blueIndexes = this.hand
-      .map((card, idx) => (card.color === 'blue' ? idx : -1))
+      .map((card, idx) => (card.isColor('blue') ? idx : -1))
       .filter((idx) => idx !== -1)
     if (blueIndexes.length === 0) return null
 
@@ -48,7 +62,7 @@ export class AIPlayer extends Player {
     gameState.players.forEach((player) => {
       if (player.id !== this.id) {
         player.hand.forEach((card) => {
-          if (card.infoToken && card.color === 'blue') {
+          if (card.infoToken && card.isColor('blue')) {
             pickedNumbers.add(card.number)
           }
         })
@@ -147,7 +161,7 @@ export class AIPlayer extends Player {
 
   _groupByValue(unrevealed) {
     return unrevealed.reduce((acc, card) => {
-      const number = card.color === 'blue' ? card.number : card.color
+      const number = card.isColor('blue') ? card.number : card.color
       acc[number] = acc[number] || []
       acc[number].push(card)
       return acc
@@ -174,8 +188,8 @@ export class AIPlayer extends Player {
       return gameState.players.every((p) =>
         p.hand.every((card) => {
           const isMyCard = p.id === this.id && valueGroups[num].some((c) => c.id === card.id)
-          const isBlueMismatch = card.number != num && card.color === 'blue'
-          const isYellowMismatch = card.color !== 'blue' && card.color !== num
+          const isBlueMismatch = card.number != num && card.isColor('blue')
+          const isYellowMismatch = !card.isColor('blue') && card.color !== num
           const isRevealed = card.revealed
           // Check if the card is either my card, a blue mismatch, a yellow mismatch,
           return isMyCard || isBlueMismatch || isYellowMismatch || isRevealed
@@ -200,7 +214,7 @@ export class AIPlayer extends Player {
           .filter((p) => p.id !== this.id)
           .flatMap((p) =>
             p.hand
-              .filter((card) => !card.revealed && card.number === myCard.number && card.infoToken)
+              .filter((card) => !card.revealed && myCard.matches(card) && card.infoToken)
               .map((card) => ({ p, card })),
           )[0]
         if (found) {
@@ -317,7 +331,7 @@ export class AIPlayer extends Player {
     // Use existing probability data to find best double detector combinations
     for (const myCard of myCards) {
       // Count total matching cards across OTHER players' hands for this myCard value
-      const myCardValue = myCard.color === 'blue' ? myCard.number : myCard.color
+      const myCardValue = myCard.isColor('blue') ? myCard.number : myCard.color
       const totalMatchingCards = gameState.players
         .filter((p) => p.id !== this.id)
         .reduce((count, player) => {
@@ -325,7 +339,7 @@ export class AIPlayer extends Player {
             count +
             player.hand.filter((card) => {
               if (card.revealed) return false
-              const cardValue = card.color === 'blue' ? card.number : card.color
+              const cardValue = card.isColor('blue') ? card.number : card.color
               return cardValue === myCardValue
             }).length
           )
@@ -391,8 +405,8 @@ export class AIPlayer extends Player {
   _getProbFromSlot(myCard, slots) {
     for (const slot of slots) {
       if (
-        (myCard.color === 'blue' && slot.value === myCard.number) ||
-        (myCard.color === 'yellow' && slot.color === 'yellow')
+        (myCard.isColor('blue') && slot.value === myCard.number) ||
+        (myCard.isColor('yellow') && slot.color === 'yellow')
       ) {
         return slot.probability
       }

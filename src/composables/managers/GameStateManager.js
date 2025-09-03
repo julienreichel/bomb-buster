@@ -284,14 +284,16 @@ export function useGameStateManager() {
     }
 
     // Special red logic: if source card is red and all cards in player's hand are revealed, reveal all red cards in that hand
-    if (sourceCard.color === 'red') {
-      const playerRedCards = sourcePlayer.hand.filter((c) => c.color === 'red')
-      const allRevealed = sourcePlayer.hand.every((c) => c.color === 'red' || c.revealed)
+    if (sourceCard.isColor('red')) {
+      const playerRedCards = sourcePlayer.hand.filter((c) => c.isColor('red'))
+      const allRevealed = sourcePlayer.hand.every((c) => c.isColor('red') || c.revealed)
       if (allRevealed) {
         let toReveal = []
         for (const card of playerRedCards) {
-          revealCardAndRemoveKnown(sourcePlayer, card)
-          toReveal.push(card.id)
+          if (!card.revealed) {
+            revealCardAndRemoveKnown(sourcePlayer, card)
+            toReveal.push(card.id)
+          }
         }
         return logAndReturn({
           outcome: 'match-red',
@@ -302,13 +304,14 @@ export function useGameStateManager() {
       }
     }
 
+    // Target validation - comes after red card logic
+    if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
+    const targetPlayer = players[targetPlayerIdx]
+    if (!targetPlayer) return invalidPick()
+    const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)
+
     // Double detector logic: allows selecting two target cards
     if (secondTargetCardId) {
-      if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
-      const targetPlayer = players[targetPlayerIdx]
-      if (!targetPlayer) return invalidPick()
-
-      const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)
       const secondTargetCard = targetPlayer.hand.find((c) => c.id === secondTargetCardId)
 
       if (!targetCard || !secondTargetCard) return invalidPick()
@@ -322,15 +325,8 @@ export function useGameStateManager() {
       let firstMatches = false
       let secondMatches = false
 
-      if (sourceCard.color === 'blue') {
-        // Blue cards match by number
-        firstMatches = sourceCard.number === targetCard.number
-        secondMatches = sourceCard.number === secondTargetCard.number
-      } else if (sourceCard.color === 'yellow') {
-        // Yellow cards match with other yellow cards
-        firstMatches = targetCard.color === 'yellow'
-        secondMatches = secondTargetCard.color === 'yellow'
-      }
+      firstMatches = sourceCard.matches(targetCard)
+      secondMatches = sourceCard.matches(secondTargetCard)
 
       let outcome = ''
       let revealed = []
@@ -382,10 +378,6 @@ export function useGameStateManager() {
       })
     }
 
-    if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
-    const targetPlayer = players[targetPlayerIdx]
-    if (!targetPlayer) return invalidPick()
-    const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)
     if (!sourceCard || !targetCard) return invalidPick()
     if (targetCard.revealed) return invalidPick()
 
@@ -394,7 +386,7 @@ export function useGameStateManager() {
     let infoToken = false
 
     // Blue logic: if both cards are blue and same value
-    if (sourceCard.number === targetCard.number) {
+    if (sourceCard.matches(targetCard) && sourceCard.isColor('blue')) {
       let toReveal = []
       if (sourcePlayerIdx === targetPlayerIdx) {
         const value = sourceCard.number
@@ -403,7 +395,7 @@ export function useGameStateManager() {
         for (let i = 0; i < players.length; i++) {
           if (i === sourcePlayerIdx) continue
           for (const card of players[i].hand) {
-            if (card.color === 'blue' && card.number === value && !card.revealed) {
+            if (card.isColor('blue') && card.number === value && !card.revealed) {
               allRevealed = false
               break
             }
@@ -413,7 +405,7 @@ export function useGameStateManager() {
         if (!allRevealed) return invalidPick()
         // Both cards from same player: reveal all blue cards with this value in that hand
         for (const card of sourcePlayer.hand) {
-          if (card.color === 'blue' && card.number === value) {
+          if (card.isColor('blue') && card.number === value) {
             revealCardAndRemoveKnown(sourcePlayer, card)
             toReveal.push(card.id)
           }
@@ -436,7 +428,7 @@ export function useGameStateManager() {
     }
 
     // Yellow logic: if both cards are yellow
-    if (sourceCard.color === 'yellow' && targetCard.color === 'yellow') {
+    if (sourceCard.matches(targetCard) && sourceCard.isColor('yellow')) {
       let toReveal = []
       if (sourcePlayerIdx === targetPlayerIdx) {
         // Check if all yellow cards in other players' hands are revealed
@@ -444,7 +436,7 @@ export function useGameStateManager() {
         for (let i = 0; i < players.length; i++) {
           if (i === sourcePlayerIdx) continue
           for (const card of players[i].hand) {
-            if (card.color === 'yellow' && !card.revealed) {
+            if (card.isColor('yellow') && !card.revealed) {
               allRevealed = false
               break
             }
@@ -454,7 +446,7 @@ export function useGameStateManager() {
         if (!allRevealed) return invalidPick()
         // Both cards from same player: reveal all yellow cards in that hand
         for (const card of sourcePlayer.hand) {
-          if (card.color === 'yellow') {
+          if (card.isColor('yellow')) {
             revealCardAndRemoveKnown(sourcePlayer, card)
             toReveal.push(card.id)
           }
@@ -477,7 +469,7 @@ export function useGameStateManager() {
     }
 
     // Previous rules: red, miss, etc.
-    if (targetCard.color === 'red') {
+    if (targetCard.isColor('red')) {
       revealCardAndRemoveKnown(targetPlayer, targetCard)
       gameStateInstance.detonatorDial = 0
       outcome = 'hit-red'

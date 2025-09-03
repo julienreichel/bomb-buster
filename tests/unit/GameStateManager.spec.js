@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
+import WireTile from '../../src/composables/models/WireTile.js'
 import { useGameStateManager } from '../../src/composables/managers/GameStateManager.js'
 
 describe('useGameStateManager composable', () => {
@@ -110,20 +111,21 @@ describe('useGameStateManager composable', () => {
 
   describe('playRound deterministic tests', () => {
     beforeEach(() => {
-      // Set up 3 players with empty hands
-      gameStateManager.state.players = [
-        { id: 0, hand: [], isAI: false, name: 'Human', knownWires: [] },
-        { id: 1, hand: [], isAI: true, name: 'AI 2', knownWires: [] },
-        { id: 2, hand: [], isAI: true, name: 'AI 3', knownWires: [] },
-      ]
+      // Create proper game with 3 players
+      gameStateManager.createNewGame({ numPlayers: 3, hasHuman: true })
+      // Clear their hands for test setup
+      gameStateManager.state.players.forEach((player) => {
+        player.hand = []
+        player.knownWires = []
+      })
       gameStateManager.state.detonatorDial = 3
     })
 
     it('red: player has 2 red cards, picks one as source, both are revealed', () => {
       // Setup: player 0 has 2 red cards, both not revealed
-      const redA = { id: 'rA', color: 'red', number: 7.5 }
-      const redB = { id: 'rB', color: 'red', number: 8.5 }
-      const blueA = { id: 'bA', color: 'blue', number: 5, revealed: true }
+      const redA = new WireTile({ id: 'rA', color: 'red', number: 7.5 })
+      const redB = new WireTile({ id: 'rB', color: 'red', number: 8.5 })
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 5, revealed: true })
       gameStateManager.state.players[0].hand = [redA, redB, blueA]
       gameStateManager.state.players[1].hand = []
       gameStateManager.state.players[2].hand = []
@@ -175,9 +177,9 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'bB',
       })
       expect(result.outcome).toBe('match-blue')
-      expect([blueA.revealed, blueB.revealed, blueC.revealed, blueD.revealed].every(Boolean)).toBe(
-        true,
-      )
+      // Check the actual cards in the player's hand (WireTile instances)
+      const actualCards = gameStateManager.state.players[0].hand
+      expect(actualCards.every((card) => card.revealed)).toBe(true)
       expect(result.revealed.sort()).toEqual(['bA', 'bB', 'bC', 'bD'].sort())
       expect(gameStateManager.state.history.at(-1)).toMatchObject({
         type: 'play',
@@ -205,7 +207,9 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'bB',
       })
       expect(result.outcome).toBe('match-blue')
-      expect([blueA.revealed, blueB.revealed, blueC.revealed].every(Boolean)).toBe(true)
+      // Check the actual cards in the player's hand (WireTile instances)
+      const actualCards = gameStateManager.state.players[0].hand
+      expect(actualCards.every((card) => card.revealed)).toBe(true)
       expect(result.revealed.sort()).toEqual(['bA', 'bB', 'bC'].sort())
       expect(gameStateManager.state.history.at(-1)).toMatchObject({
         type: 'play',
@@ -259,10 +263,10 @@ describe('useGameStateManager composable', () => {
 
     it('blue: player has 2 cards, other 2 in other players and both are revealed, pick is valid', () => {
       // Setup: player 0 has 2 blue 9s, player 1 and 2 have 1 blue 9 each (both revealed)
-      const blueA = { id: 'bA', color: 'blue', number: 9 }
-      const blueB = { id: 'bB', color: 'blue', number: 9 }
-      const blueC = { id: 'bC', color: 'blue', number: 9, revealed: true }
-      const blueD = { id: 'bD', color: 'blue', number: 9, revealed: true }
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 9 })
+      const blueB = new WireTile({ id: 'bB', color: 'blue', number: 9 })
+      const blueC = new WireTile({ id: 'bC', color: 'blue', number: 9, revealed: true })
+      const blueD = new WireTile({ id: 'bD', color: 'blue', number: 9, revealed: true })
       gameStateManager.state.players[0].hand = [blueA, blueB]
       gameStateManager.state.players[1].hand = [blueC]
       gameStateManager.state.players[2].hand = [blueD]
@@ -322,7 +326,9 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'yB',
       })
       expect(result.outcome).toBe('match-yellow')
-      expect([yellowA.revealed, yellowB.revealed].every(Boolean)).toBe(true)
+      // Check the actual cards in the player's hand (WireTile instances)
+      const actualCards = gameStateManager.state.players[0].hand
+      expect(actualCards.every((card) => card.revealed)).toBe(true)
       expect(result.revealed.sort()).toEqual(['yA', 'yB'].sort())
       expect(gameStateManager.state.history.at(-1)).toMatchObject({
         type: 'play',
@@ -335,8 +341,8 @@ describe('useGameStateManager composable', () => {
     })
 
     it('miss decreases detonatorDial and sets infoToken', () => {
-      const blueA = { id: 'bA', color: 'blue', number: 1 }
-      const blueB = { id: 'bB', color: 'blue', number: 2 }
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 1 })
+      const blueB = new WireTile({ id: 'bB', color: 'blue', number: 2 })
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [blueB]
       gameStateManager.state.detonatorDial = 3
@@ -363,8 +369,8 @@ describe('useGameStateManager composable', () => {
     })
 
     it('blue match reveals both cards', () => {
-      const blueA = { id: 'bA', color: 'blue', number: 5 }
-      const blueB = { id: 'bB', color: 'blue', number: 5 }
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 5 })
+      const blueB = new WireTile({ id: 'bB', color: 'blue', number: 5 })
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [blueB]
       gameStateManager.state.players[0].knownWires = [blueA]
@@ -405,9 +411,9 @@ describe('useGameStateManager composable', () => {
     })
 
     it('reset known card if picking the same value but different card', () => {
-      const blueA = { id: 'bA', color: 'blue', number: 5, revealed: false }
-      const blueB = { id: 'bB', color: 'blue', number: 5, revealed: false }
-      const blueC = { id: 'bC', color: 'blue', number: 5, revealed: false }
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 5, revealed: false })
+      const blueB = new WireTile({ id: 'bB', color: 'blue', number: 5, revealed: false })
+      const blueC = new WireTile({ id: 'bC', color: 'blue', number: 5, revealed: false })
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [blueB, blueC]
       gameStateManager.state.players[1].knownWires = [blueC]
@@ -424,8 +430,8 @@ describe('useGameStateManager composable', () => {
     })
 
     it('yellow match reveals both cards', () => {
-      const yellowA = { id: 'yA', color: 'yellow', number: 1.1 }
-      const yellowB = { id: 'yB', color: 'yellow', number: 2.1 }
+      const yellowA = new WireTile({ id: 'yA', color: 'yellow', number: 1.1 })
+      const yellowB = new WireTile({ id: 'yB', color: 'yellow', number: 2.1 })
       gameStateManager.state.players[0].hand = [yellowA]
       gameStateManager.state.players[2].hand = [yellowB]
       const result = gameStateManager.playRound({
@@ -449,8 +455,8 @@ describe('useGameStateManager composable', () => {
     })
 
     it('red target sets detonatorDial to 0 and reveals red', () => {
-      const blueA = { id: 'bA', color: 'blue', number: 3 }
-      const redB = { id: 'rB', color: 'red', number: 7.5 }
+      const blueA = new WireTile({ id: 'bA', color: 'blue', number: 3 })
+      const redB = new WireTile({ id: 'rB', color: 'red', number: 7.5 })
       gameStateManager.state.players[0].hand = [blueA]
       gameStateManager.state.players[1].hand = [redB]
       gameStateManager.state.detonatorDial = 3
