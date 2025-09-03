@@ -13,7 +13,6 @@ export default defineConfig({
       // CI-friendly configuration
       screenshotFailures: false,
     },
-    setupFiles: ['./tests/setup.js'],
     // Retry tests in CI environments
     retry: process.env.CI ? 2 : 0,
     coverage: {
