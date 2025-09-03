@@ -271,7 +271,7 @@ export class AIPlayer extends Player {
       probabilities.forEach((p) => {
         const target = p.slots.find(
           (s) =>
-            Number(s.value) === Number(card.number) ||
+            Number(s.number) === Number(card.number) ||
             (card.color === 'yellow' && s.color === 'yellow'),
         )
         const redSlot = p.slots.find((s) => s.color === 'red')
@@ -405,7 +405,7 @@ export class AIPlayer extends Player {
   _getProbFromSlot(myCard, slots) {
     for (const slot of slots) {
       if (
-        (myCard.isColor('blue') && slot.value === myCard.number) ||
+        (myCard.isColor('blue') && slot.number === myCard.number) ||
         (myCard.isColor('yellow') && slot.color === 'yellow')
       ) {
         return slot.probability

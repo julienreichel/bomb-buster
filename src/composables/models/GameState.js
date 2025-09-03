@@ -239,7 +239,7 @@ export default class GameState {
     }
     pool.sort((a, b) => a.number - b.number) // Sort by number ascending
     // Monte Carlo sampling
-    const slotValueCounts = Array(numSlots)
+    const slotNumberCounts = Array(numSlots)
       .fill(0)
       .map(() => ({}))
 
@@ -317,7 +317,7 @@ export default class GameState {
           continue
         }
         if (assignment[s]) continue // Already assigned by knownCards
-        // Find a value in shuffled that is in slotSets[s]
+        // Find a number in shuffled that is in slotSets[s]
         let foundIdx = -1
         if (slotSets[s].player.id !== currentPlayerId) {
           currentPlayerId = slotSets[s].player.id
@@ -325,10 +325,10 @@ export default class GameState {
         }
 
         for (let k = 0; k < shuffled.length; ++k) {
-          const value = shuffled[k].number
-          if (value >= minVal && slotSets[s].candidates.has(value)) {
+          const number = shuffled[k].number
+          if (number >= minVal && slotSets[s].candidates.has(number)) {
             foundIdx = k
-            minVal = value
+            minVal = number
             break
           }
         }
@@ -346,27 +346,27 @@ export default class GameState {
       for (let s = 0; s < numSlots; ++s) {
         const v = assignment[s]
         if (v === null || v === undefined) continue // No candidates, skip this slot
-        slotValueCounts[s][v] = (slotValueCounts[s][v] || 0) + 1
+        slotNumberCounts[s][v] = (slotNumberCounts[s][v] || 0) + 1
       }
     }
     if (successRun < N / 100) {
       console.warn('Monte Carlo sampling did not find enough valid runs:', successRun, 'out of', N)
     }
     // Compute probabilities
-    return slotValueCounts.map((counts, idx) => {
+    return slotNumberCounts.map((counts, idx) => {
       let total = 0
       const slots = []
       Object.entries(counts).forEach(([val, count]) => {
         total += count
         const digit = (Number(val) * 10) % 10
         const color = digit === 0 ? 'blue' : digit === 1 ? 'yellow' : 'red'
-        slots.push({ value: Number(val), count, color })
+        slots.push({ number: Number(val), count, color })
       })
       slots.sort((a, b) => b.count - a.count)
 
       return {
         slots: slots.map((s) => ({
-          value: s.value,
+          number: s.number,
           color: s.color,
           probability: total > 0 ? s.count / total : 0,
         })),

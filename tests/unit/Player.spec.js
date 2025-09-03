@@ -846,15 +846,15 @@ describe('Player composable', () => {
             {
               info: { player: otherPlayer, card: otherPlayer.hand[0] },
               slots: [
-                { color: 'blue', value: 5, probability: 0.7 },
-                { color: 'blue', value: 6, probability: 0.3 },
+                { color: 'blue', number: 5, probability: 0.7 },
+                { color: 'blue', number: 6, probability: 0.3 },
               ],
             },
             {
               info: { player: otherPlayer, card: otherPlayer.hand[1] },
               slots: [
-                { color: 'blue', value: 5, probability: 0.3 },
-                { color: 'blue', value: 6, probability: 0.7 },
+                { color: 'blue', number: 5, probability: 0.3 },
+                { color: 'blue', number: 6, probability: 0.7 },
               ],
             },
           ]
@@ -920,19 +920,19 @@ describe('Player composable', () => {
       const probabilities = [
         {
           info: { player: otherPlayer, card: otherPlayer.hand[0] },
-          slots: [{ color: 'blue', value: 5, probability: 0.1 }],
+          slots: [{ color: 'blue', number: 5, probability: 0.1 }],
         },
         {
           info: { player: otherPlayer, card: otherPlayer.hand[1] },
-          slots: [{ color: 'blue', value: 5, probability: 0.4 }],
+          slots: [{ color: 'blue', number: 5, probability: 0.4 }],
         },
         {
           info: { player: otherPlayer2, card: otherPlayer2.hand[0] },
-          slots: [{ color: 'blue', value: 5, probability: 0.1 }],
+          slots: [{ color: 'blue', number: 5, probability: 0.1 }],
         },
         {
           info: { player: otherPlayer2, card: otherPlayer2.hand[1] },
-          slots: [{ color: 'blue', value: 5, probability: 0.4 }],
+          slots: [{ color: 'blue', number: 5, probability: 0.4 }],
         },
       ]
       const result = ai._checkDoubleDetectorAdvantage(gameState, probabilities, 0.4)
@@ -965,15 +965,15 @@ describe('Player composable', () => {
         {
           info: { player: otherPlayer, card: otherPlayer.hand[0] },
           slots: [
-            { color: 'blue', value: 7, probability: 0.5 },
-            { color: 'yellow', value: 8.1, probability: 0.5 },
+            { color: 'blue', number: 7, probability: 0.5 },
+            { color: 'yellow', number: 8.1, probability: 0.5 },
           ],
         },
         {
           info: { player: otherPlayer, card: otherPlayer.hand[1] },
           slots: [
-            { color: 'blue', value: 7, probability: 0.5 },
-            { color: 'yellow', value: 8.1, probability: 0.5 },
+            { color: 'blue', number: 7, probability: 0.5 },
+            { color: 'yellow', number: 8.1, probability: 0.5 },
           ],
         },
       ]
@@ -1015,15 +1015,15 @@ describe('Player composable', () => {
         {
           info: { player: otherPlayer, card: otherPlayer.hand[0] },
           slots: [
-            { color: 'blue', value: 7, probability: 0.5 },
-            { color: 'yellow', value: 8.1, probability: 0.5 },
+            { color: 'blue', number: 7, probability: 0.5 },
+            { color: 'yellow', number: 8.1, probability: 0.5 },
           ],
         },
         {
           info: { player: otherPlayer, card: otherPlayer.hand[1] },
           slots: [
-            { color: 'blue', value: 7, probability: 0.5 },
-            { color: 'yellow', value: 8.1, probability: 0.5 },
+            { color: 'blue', number: 7, probability: 0.5 },
+            { color: 'yellow', number: 8.1, probability: 0.5 },
           ],
         },
       ]
