@@ -385,58 +385,19 @@ export function useGameStateManager() {
     let revealed = []
     let infoToken = false
 
-    // Blue logic: if both cards are blue and same value
-    if (sourceCard.matches(targetCard) && sourceCard.isColor('blue')) {
+    // Blue and Yellow logic: if cards match (blue same number or yellow same color)
+    if (sourceCard.matches(targetCard)) {
+      const cardColor = sourceCard.color
       let toReveal = []
-      if (sourcePlayerIdx === targetPlayerIdx) {
-        const value = sourceCard.number
-        // Check if all blue cards with this value in other players' hands are revealed
-        let allRevealed = true
-        for (let i = 0; i < players.length; i++) {
-          if (i === sourcePlayerIdx) continue
-          for (const card of players[i].hand) {
-            if (card.isColor('blue') && card.number === value && !card.revealed) {
-              allRevealed = false
-              break
-            }
-          }
-          if (!allRevealed) break
-        }
-        if (!allRevealed) return invalidPick()
-        // Both cards from same player: reveal all blue cards with this value in that hand
-        for (const card of sourcePlayer.hand) {
-          if (card.isColor('blue') && card.number === value) {
-            revealCardAndRemoveKnown(sourcePlayer, card)
-            toReveal.push(card.id)
-          }
-        }
-      } else {
-        // Cards from different players: only reveal the selected cards
-        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
-        toReveal.push(sourceCard.id)
-        revealCardAndRemoveKnown(targetPlayer, targetCard)
-        toReveal.push(targetCard.id)
-      }
-      outcome = 'match-blue'
-      revealed = toReveal
-      return logAndReturn({
-        outcome,
-        detonatorDial: gameStateInstance.detonatorDial,
-        revealed,
-        infoToken,
-      })
-    }
 
-    // Yellow logic: if both cards are yellow
-    if (sourceCard.matches(targetCard) && sourceCard.isColor('yellow')) {
-      let toReveal = []
       if (sourcePlayerIdx === targetPlayerIdx) {
-        // Check if all yellow cards in other players' hands are revealed
+        // Both cards from same player: check if all matching cards in other players' hands are revealed
         let allRevealed = true
         for (let i = 0; i < players.length; i++) {
           if (i === sourcePlayerIdx) continue
           for (const card of players[i].hand) {
-            if (card.isColor('yellow') && !card.revealed) {
+            const isMatchingCard = sourceCard.matches(card)
+            if (isMatchingCard && !card.revealed) {
               allRevealed = false
               break
             }
@@ -444,9 +405,11 @@ export function useGameStateManager() {
           if (!allRevealed) break
         }
         if (!allRevealed) return invalidPick()
-        // Both cards from same player: reveal all yellow cards in that hand
+
+        // Reveal all matching cards in the source player's hand
         for (const card of sourcePlayer.hand) {
-          if (card.isColor('yellow')) {
+          const shouldReveal = sourceCard.matches(card)
+          if (shouldReveal) {
             revealCardAndRemoveKnown(sourcePlayer, card)
             toReveal.push(card.id)
           }
@@ -458,7 +421,8 @@ export function useGameStateManager() {
         revealCardAndRemoveKnown(targetPlayer, targetCard)
         toReveal.push(targetCard.id)
       }
-      outcome = 'match-yellow'
+
+      outcome = `match-${cardColor}`
       revealed = toReveal
       return logAndReturn({
         outcome,
@@ -481,25 +445,23 @@ export function useGameStateManager() {
         infoToken,
       })
     }
-    if (sourceCard.number !== targetCard.number) {
-      if (sourcePlayerIdx === targetPlayerIdx) {
-        // Cannot pick two cards from the same player
-        return invalidPick()
-      }
-      gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
-      targetCard.infoToken = true
-      infoToken = true
-      outcome = 'miss'
-      revealed = []
-      sourcePlayer.knownWires.push(sourceCard) // Add to known wires
-      return logAndReturn({
-        outcome,
-        detonatorDial: gameStateInstance.detonatorDial,
-        revealed,
-        infoToken,
-      })
+
+    if (sourcePlayerIdx === targetPlayerIdx) {
+      // Cannot pick two cards from the same player
+      return invalidPick()
     }
-    return invalidPick()
+    gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
+    targetCard.infoToken = true
+    infoToken = true
+    outcome = 'miss'
+    revealed = []
+    sourcePlayer.knownWires.push(sourceCard) // Add to known wires
+    return logAndReturn({
+      outcome,
+      detonatorDial: gameStateInstance.detonatorDial,
+      revealed,
+      infoToken,
+    })
   }
 
   return {
