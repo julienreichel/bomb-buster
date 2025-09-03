@@ -15,6 +15,7 @@
           :rules="[(val) => (val >= 3 && val <= 5) || '3 to 5 players']"
         />
         <q-toggle v-model="hasHuman" label="Include Human Player" class="q-mt-md" />
+        <q-toggle v-model="doubleDetectorEnabled" label="Enable Double Detector" class="q-mt-md" />
         <div class="q-mt-md">
           <div class="text-subtitle2">Yellow Wires</div>
           <q-input
@@ -86,6 +87,7 @@ import { useRouter } from 'vue-router'
 
 const numPlayers = ref(4)
 const hasHuman = ref(true)
+const doubleDetectorEnabled = ref(true)
 const yellowCreated = ref(0)
 const yellowOnBoard = ref(0)
 const redCreated = ref(0)
@@ -134,6 +136,7 @@ function startGame() {
     query: {
       numPlayers: numPlayers.value,
       hasHuman: hasHuman.value ? 1 : 0,
+      doubleDetectorEnabled: doubleDetectorEnabled.value ? 1 : 0,
       yellowCreated: yellowCreated.value,
       yellowOnBoard: yellowOnBoard.value,
       redCreated: redCreated.value,
@@ -147,6 +150,7 @@ function runSimulation() {
     path: '/simulate',
     query: {
       numPlayers: numPlayers.value,
+      doubleDetectorEnabled: doubleDetectorEnabled.value ? 1 : 0,
       yellowCreated: yellowCreated.value,
       yellowOnBoard: yellowOnBoard.value,
       redCreated: redCreated.value,

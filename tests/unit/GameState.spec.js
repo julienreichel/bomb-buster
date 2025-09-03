@@ -430,15 +430,15 @@ describe('GameState composable', () => {
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
 
       expect(res[0].slots.length).toEqual(1)
-      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].value).toEqual(1)
       expect(res[0].slots[0].probability).toEqual(1)
 
       expect(res[1].slots.length).toEqual(1)
-      expect(res[1].slots[0].value).toEqual('2')
+      expect(res[1].slots[0].value).toEqual(2)
       expect(res[1].slots[0].probability).toEqual(1)
 
       expect(res[2].slots.length).toEqual(1)
-      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].value).toEqual(3)
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
@@ -462,15 +462,15 @@ describe('GameState composable', () => {
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
 
       expect(res[0].slots.length).toEqual(1)
-      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].value).toEqual(1)
       expect(res[0].slots[0].probability).toEqual(1)
 
       expect(res[1].slots.length).toEqual(1)
-      expect(res[1].slots[0].value).toEqual('2.1')
+      expect(res[1].slots[0].value).toEqual(2.1)
       expect(res[1].slots[0].probability).toEqual(1)
 
       expect(res[2].slots.length).toEqual(1)
-      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].value).toEqual(3)
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
@@ -495,14 +495,14 @@ describe('GameState composable', () => {
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
 
       expect(res[0].slots.length).toEqual(1)
-      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].value).toEqual(1)
       expect(res[0].slots[0].probability).toEqual(1)
 
       expect(res[1].slots.length).toEqual(2)
-      expect(res[1].slots.map((s) => s.value).sort()).toEqual(['2.1', '3.1'])
+      expect(res[1].slots.map((s) => s.value).sort()).toEqual([2.1, 3.1])
 
       expect(res[2].slots.length).toEqual(1)
-      expect(res[2].slots[0].value).toEqual('4')
+      expect(res[2].slots[0].value).toEqual(4)
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
@@ -526,15 +526,15 @@ describe('GameState composable', () => {
       const res = gs.monteCarloSlotProbabilities(slotPoss, null, 100)
 
       expect(res[0].slots.length).toEqual(1)
-      expect(res[0].slots[0].value).toEqual('1')
+      expect(res[0].slots[0].value).toEqual(1)
       expect(res[0].slots[0].probability).toEqual(1)
 
       expect(res[1].slots.length).toEqual(1)
-      expect(res[1].slots[0].value).toEqual('2.5')
+      expect(res[1].slots[0].value).toEqual(2.5)
       expect(res[1].slots[0].probability).toEqual(1)
 
       expect(res[2].slots.length).toEqual(1)
-      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].value).toEqual(3)
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
@@ -570,15 +570,15 @@ describe('GameState composable', () => {
       expect(res[0].slots.length).toEqual(0)
 
       expect(res[1].slots.length).toEqual(1)
-      expect(res[1].slots[0].value).toEqual('2')
+      expect(res[1].slots[0].value).toEqual(2)
       expect(res[1].slots[0].probability).toEqual(1)
 
       expect(res[2].slots.length).toEqual(1)
-      expect(res[2].slots[0].value).toEqual('3')
+      expect(res[2].slots[0].value).toEqual(3)
       expect(res[2].slots[0].probability).toEqual(1)
 
       expect(res[3].slots.length).toEqual(1)
-      expect(res[3].slots[0].value).toEqual('4')
+      expect(res[3].slots[0].value).toEqual(4)
       expect(res[3].slots[0].probability).toEqual(1)
     })
   })

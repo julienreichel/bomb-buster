@@ -47,6 +47,11 @@ const hasHuman = computed(() =>
     ? true
     : route.query.hasHuman === '1' || route.query.hasHuman === true,
 )
+const doubleDetectorEnabled = computed(() =>
+  route.query.doubleDetectorEnabled === undefined
+    ? true
+    : route.query.doubleDetectorEnabled === '1' || route.query.doubleDetectorEnabled === true,
+)
 const yellowCreated = computed(() => parseInt(route.query.yellowCreated) || 0)
 const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard) || 0)
 const redCreated = computed(() => parseInt(route.query.redCreated) || 0)
@@ -56,6 +61,7 @@ onMounted(() => {
   createNewGame({
     numPlayers: numPlayers.value,
     hasHuman: hasHuman.value,
+    doubleDetectorEnabled: doubleDetectorEnabled.value,
     yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
     red: { created: redCreated.value, onBoard: redOnBoard.value },
     autoStart: true, // Automatically start the game after setup

@@ -21,6 +21,7 @@ describe('PlayArea Component', () => {
     // Reset mocks before each test
     vi.clearAllMocks()
   })
+
   const mockState = {
     players: [
       { id: 0, name: 'Alice', hand: [], isAI: false },
@@ -37,6 +38,34 @@ describe('PlayArea Component', () => {
     state: mockState,
     selectedPlayerIdx: 0,
   }
+
+  // Helper function for double detector tests
+  const createDoubleDetectorState = (hasDoubleDetector = true) => ({
+    ...mockState,
+    phase: 'play-phase',
+    currentPicker: 0,
+    players: [
+      {
+        id: 0,
+        name: 'Alice',
+        hand: [
+          { id: 'blue1', type: 'blue', number: 1 },
+          { id: 'yellow1', type: 'yellow', number: 2 },
+        ],
+        isAI: false,
+        hasDoubleDetector,
+      },
+      {
+        id: 1,
+        name: 'Bob',
+        hand: [
+          { id: 'blue2', type: 'blue', number: 1 },
+          { id: 'blue3', type: 'blue', number: 2 },
+        ],
+        isAI: true,
+      },
+    ],
+  })
 
   it('shows play message when isHumanTurn and playMessage provided', () => {
     const wrapper = mount(
@@ -488,7 +517,11 @@ describe('PlayArea Component', () => {
         targetCardId: 'target-card',
       })
       expect(mockAdvancePlayRound).toHaveBeenCalled()
-      expect(wrapper.vm.playSelection).toEqual({ sourceCard: null, targetCard: null })
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
     })
 
     it('handleHumanPlayPick - Step 2: handles invalid target pick', async () => {
@@ -512,7 +545,11 @@ describe('PlayArea Component', () => {
 
       expect(mockPlayRound).toHaveBeenCalled()
       expect(mockAdvancePlayRound).not.toHaveBeenCalled()
-      expect(wrapper.vm.playSelection).toEqual({ sourceCard: null, targetCard: null }) // Reset selection
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      }) // Reset selection
     })
 
     it('handleHumanPlayPick - Step 2: handles player not found', async () => {
@@ -810,6 +847,568 @@ describe('PlayArea Component', () => {
       updatedDecks.forEach((deck) => {
         expect(deck.props('candidates')).toBeDefined()
       })
+    })
+  })
+
+  describe('Double Detector Functionality', () => {
+    it('shows double detector button when player has double detector and it is play phase', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      expect(doubleDetectorBtn.exists()).toBe(true)
+      expect(doubleDetectorBtn.attributes('label')).toBe('Double Detector')
+    })
+
+    it('hides double detector button when player does not have double detector', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState(false) },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      expect(doubleDetectorBtn.exists()).toBe(false)
+    })
+
+    it('hides double detector button when not human turn', () => {
+      const state = { ...createDoubleDetectorState(), currentPicker: 1 }
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      expect(doubleDetectorBtn.exists()).toBe(false)
+    })
+
+    it('hides double detector button when not in play phase', () => {
+      const state = { ...createDoubleDetectorState(), phase: 'pick-card' }
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      expect(doubleDetectorBtn.exists()).toBe(false)
+    })
+
+    it('toggles double detector when button is clicked', async () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      expect(wrapper.vm.doubleDetector).toBe(false)
+
+      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      await doubleDetectorBtn.trigger('click')
+
+      expect(wrapper.vm.doubleDetector).toBe(true)
+      expect(doubleDetectorBtn.attributes('label')).toBe('Double Detector Active')
+    })
+
+    it('resets target selections when toggling double detector', async () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Set up play selection with source card
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: { id: 'target' },
+        secondTargetCard: { id: 'second' },
+      }
+
+      await wrapper.vm.toggleDoubleDetector()
+
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: { id: 'source' },
+        targetCard: null,
+        secondTargetCard: null,
+      })
+    })
+
+    it('does not toggle double detector when player does not have it', async () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState(false) },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      const initialState = wrapper.vm.doubleDetector
+      await wrapper.vm.toggleDoubleDetector()
+
+      expect(wrapper.vm.doubleDetector).toBe(initialState)
+    })
+
+    it('calculates correct button labels for double detector states', async () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Initial state
+      expect(wrapper.vm.doubleDetectorButtonLabel).toBe('Double Detector')
+
+      // Activate double detector
+      wrapper.vm.doubleDetector = true
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.doubleDetectorButtonLabel).toBe('Double Detector Active')
+
+      // Add source card
+      wrapper.vm.playSelection.sourceCard = { id: 'source' }
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.doubleDetectorButtonLabel).toBe('Pick 2 targets')
+
+      // Add first target
+      wrapper.vm.playSelection.targetCard = { id: 'target1' }
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.doubleDetectorButtonLabel).toBe('Pick 1 more')
+
+      // Add second target
+      wrapper.vm.playSelection.secondTargetCard = { id: 'target2' }
+      await wrapper.vm.$nextTick()
+      expect(wrapper.vm.doubleDetectorButtonLabel).toBe('Ready to execute!')
+    })
+
+    it('handles double detector play with two target cards', async () => {
+      mockPlayRound.mockReturnValue({ outcome: 'match-blue' })
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Activate double detector and set source card
+      wrapper.vm.doubleDetector = true
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: null,
+        secondTargetCard: null,
+      }
+
+      // First target card
+      await wrapper.vm.handleHumanPlayPick({ id: 'target1' }, 1)
+      expect(wrapper.vm.playSelection.targetCard).toEqual({ id: 'target1' })
+      expect(wrapper.vm.playSelection.secondTargetCard).toBeNull()
+      expect(mockPlayRound).not.toHaveBeenCalled()
+
+      // Second target card
+      await wrapper.vm.handleHumanPlayPick({ id: 'target2' }, 1)
+
+      expect(mockPlayRound).toHaveBeenCalledWith({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'source',
+        targetPlayerIdx: 1,
+        targetCardId: 'target1',
+        secondTargetCardId: 'target2',
+      })
+      expect(mockAdvancePlayRound).toHaveBeenCalled()
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
+    })
+
+    it('ignores duplicate target card selection in double detector mode', async () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.doubleDetector = true
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: { id: 'target1' },
+        secondTargetCard: null,
+      }
+
+      // Try to select same card as second target
+      await wrapper.vm.handleHumanPlayPick({ id: 'target1' }, 1)
+
+      // Should not change state
+      expect(wrapper.vm.playSelection.secondTargetCard).toBeNull()
+      expect(mockPlayRound).not.toHaveBeenCalled()
+    })
+
+    it('resets play selection when double detector play is invalid', async () => {
+      mockPlayRound.mockReturnValue({ outcome: 'invalid-pick' })
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.doubleDetector = true
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: { id: 'target1' },
+        secondTargetCard: null,
+      }
+
+      await wrapper.vm.handleHumanPlayPick({ id: 'target2' }, 1)
+
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
+      expect(mockAdvancePlayRound).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Selection State Management', () => {
+    it('tracks selected cards correctly', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: defaultProps,
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Initial state
+      expect(wrapper.vm.selectedCards).toEqual({
+        sourceCardId: null,
+        targetCardId: null,
+        secondTargetCardId: null,
+      })
+
+      // Set selection
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source1' },
+        targetCard: { id: 'target1' },
+        secondTargetCard: { id: 'target2' },
+      }
+
+      expect(wrapper.vm.selectedCards).toEqual({
+        sourceCardId: 'source1',
+        targetCardId: 'target1',
+        secondTargetCardId: 'target2',
+      })
+    })
+
+    it('enhances other players with selection state', () => {
+      const testState = {
+        ...mockState,
+        players: [
+          {
+            id: 0,
+            name: 'Alice',
+            hand: [{ id: 'card1' }],
+            isAI: false,
+          },
+          {
+            id: 1,
+            name: 'Bob',
+            hand: [{ id: 'card2' }, { id: 'card3' }],
+            isAI: true,
+          },
+        ],
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'card1' },
+        targetCard: { id: 'card2' },
+        secondTargetCard: null,
+      }
+
+      const otherPlayersWithSelection = wrapper.vm.otherPlayersWithSelection
+      expect(otherPlayersWithSelection).toHaveLength(1)
+      expect(otherPlayersWithSelection[0].name).toBe('Bob')
+      expect(otherPlayersWithSelection[0].hand[0].selected).toBe(true) // card2 is selected
+      expect(otherPlayersWithSelection[0].hand[1].selected).toBe(false) // card3 is not selected
+    })
+
+    it('enhances selected player with selection state', () => {
+      const testState = {
+        ...mockState,
+        players: [
+          {
+            id: 0,
+            name: 'Alice',
+            hand: [{ id: 'card1' }, { id: 'card2' }],
+            isAI: false,
+          },
+        ],
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'card1' },
+        targetCard: null,
+        secondTargetCard: null,
+      }
+
+      const selectedPlayerWithSelection = wrapper.vm.selectedPlayerWithSelection
+      expect(selectedPlayerWithSelection.name).toBe('Alice')
+      expect(selectedPlayerWithSelection.hand[0].selected).toBe(true) // card1 is selected
+      expect(selectedPlayerWithSelection.hand[1].selected).toBe(false) // card2 is not selected
+    })
+
+    it('handles player without hand gracefully in selection enhancement', () => {
+      const testState = {
+        ...mockState,
+        players: [{ id: 0, name: 'Alice', isAI: false }], // No hand property
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      expect(() => wrapper.vm.selectedPlayerWithSelection).not.toThrow()
+      expect(wrapper.vm.selectedPlayerWithSelection).toEqual({ id: 0, name: 'Alice', isAI: false })
+    })
+
+    it('resets all selection state correctly', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: defaultProps,
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Set up state
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: { id: 'target' },
+        secondTargetCard: { id: 'second' },
+      }
+      wrapper.vm.doubleDetector = true
+
+      // Reset
+      wrapper.vm.resetPlaySelection()
+
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
+      expect(wrapper.vm.doubleDetector).toBe(false)
+    })
+  })
+
+  describe('Play Message Variants', () => {
+    it('shows correct message for double detector mode', async () => {
+      const testState = {
+        ...mockState,
+        phase: 'play-phase',
+        currentPicker: 0,
+        players: [{ id: 0, name: 'Alice', isAI: false, hasDoubleDetector: true }],
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Activate double detector with source card
+      wrapper.vm.doubleDetector = true
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: null,
+        secondTargetCard: null,
+      }
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.playMessage).toBe(
+        "Double Detector Active: Pick TWO cards from another player's hand",
+      )
+
+      // With second target selected
+      wrapper.vm.playSelection.secondTargetCard = { id: 'second' }
+      await wrapper.vm.$nextTick()
+
+      expect(wrapper.vm.playMessage).toBe(
+        'Double Detector: Ready to play! Click to execute your move.',
+      )
+    })
+  })
+
+  describe('Advanced Double Detector Scenarios', () => {
+    it('handles complex double detector workflow', async () => {
+      mockPlayRound
+        .mockReturnValueOnce({ outcome: 'valid' }) // Source card selection
+        .mockReturnValueOnce({ outcome: 'match-blue' }) // Double detector execution
+
+      const testState = {
+        ...mockState,
+        phase: 'play-phase',
+        currentPicker: 0,
+        players: [
+          {
+            id: 0,
+            name: 'Alice',
+            hand: [{ id: 'source-card' }],
+            isAI: false,
+            hasDoubleDetector: true,
+          },
+          {
+            id: 1,
+            name: 'Bob',
+            hand: [{ id: 'target1' }, { id: 'target2' }],
+            isAI: true,
+          },
+        ],
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Step 1: Activate double detector
+      await wrapper.vm.toggleDoubleDetector()
+      expect(wrapper.vm.doubleDetector).toBe(true)
+
+      // Step 2: Select source card
+      await wrapper.vm.handleHumanPlayPick({ id: 'source-card' }, 0)
+      expect(wrapper.vm.playSelection.sourceCard).toEqual({ id: 'source-card' })
+
+      // Step 3: Select first target
+      await wrapper.vm.handleHumanPlayPick({ id: 'target1' }, 1)
+      expect(wrapper.vm.playSelection.targetCard).toEqual({ id: 'target1' })
+      expect(mockAdvancePlayRound).not.toHaveBeenCalled()
+
+      // Step 4: Select second target and execute
+      await wrapper.vm.handleHumanPlayPick({ id: 'target2' }, 1)
+
+      expect(mockPlayRound).toHaveBeenCalledWith({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'source-card',
+        targetPlayerIdx: 1,
+        targetCardId: 'target1',
+        secondTargetCardId: 'target2',
+      })
+      expect(mockAdvancePlayRound).toHaveBeenCalled()
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
+    })
+
+    it('handles double detector with invalid outcome types correctly', async () => {
+      mockPlayRound.mockReturnValue({ outcome: 'special-invalid-double' })
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: createDoubleDetectorState() },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.doubleDetector = true
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'source' },
+        targetCard: { id: 'target1' },
+        secondTargetCard: null,
+      }
+
+      await wrapper.vm.handleHumanPlayPick({ id: 'target2' }, 1)
+
+      // Should reset because outcome contains 'invalid'
+      expect(wrapper.vm.playSelection).toEqual({
+        sourceCard: null,
+        targetCard: null,
+        secondTargetCard: null,
+      })
+      expect(mockAdvancePlayRound).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('hasSourceCard Computed Property', () => {
+    it('returns true when source card is selected', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: defaultProps,
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'test' },
+        targetCard: null,
+        secondTargetCard: null,
+      }
+      expect(wrapper.vm.hasSourceCard).toBe(true)
+    })
+
+    it('returns false when no source card is selected', () => {
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: defaultProps,
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      wrapper.vm.playSelection = { sourceCard: null, targetCard: null, secondTargetCard: null }
+      expect(wrapper.vm.hasSourceCard).toBe(false)
     })
   })
 })

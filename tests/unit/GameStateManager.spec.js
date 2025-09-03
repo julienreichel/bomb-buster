@@ -575,4 +575,206 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.phase).toBe('game-over')
     })
   })
+
+  describe('Double Detector functionality', () => {
+    it('should initialize players with double detectors', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      for (const player of gameStateManager.state.players) {
+        expect(player.hasDoubleDetector).toBe(true)
+      }
+    })
+
+    it('should not allow double detector usage when already used', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const player = gameStateManager.state.players[0]
+      player.hasDoubleDetector = false
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: player.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: gameStateManager.state.players[1].hand[0].id,
+        secondTargetCardId: gameStateManager.state.players[1].hand[1].id,
+      })
+
+      expect(result.outcome).toBe('invalid-pick')
+    })
+
+    it('should work normally when not using double detector', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const player = gameStateManager.state.players[0]
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: player.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: gameStateManager.state.players[1].hand[0].id,
+      })
+
+      expect(result.outcome).not.toBe('invalid-pick')
+    })
+
+    it('should not allow selecting the same card twice with double detector', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const player = gameStateManager.state.players[0]
+      const targetCard = gameStateManager.state.players[1].hand[0]
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: player.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetCard.id,
+        secondTargetCardId: targetCard.id, // Same card
+      })
+
+      expect(result.outcome).toBe('invalid-pick')
+    })
+
+    it('double detector single match: should reveal matching cards', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const sourcePlayer = gameStateManager.state.players[0]
+      const targetPlayer = gameStateManager.state.players[1]
+
+      // Set up cards with known values
+      sourcePlayer.hand[0].number = 5
+      targetPlayer.hand[0].number = 5 // Matches
+      targetPlayer.hand[1].number = 7 // Doesn't match
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: sourcePlayer.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetPlayer.hand[0].id,
+        secondTargetCardId: targetPlayer.hand[1].id,
+      })
+
+      expect(result.outcome).toBe('match-blue')
+      expect(result.revealed).toContain(sourcePlayer.hand[0].id)
+      expect(result.revealed).toContain(targetPlayer.hand[0].id)
+      expect(result.revealed).toHaveLength(2)
+      expect(sourcePlayer.hasDoubleDetector).toBe(false)
+    })
+
+    it('double detector double match: should reveal one target randomly', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const sourcePlayer = gameStateManager.state.players[0]
+      const targetPlayer = gameStateManager.state.players[1]
+
+      // Set up cards with known values - both targets match
+      sourcePlayer.hand[0].number = 5
+      targetPlayer.hand[0].number = 5 // Matches
+      targetPlayer.hand[1].number = 5 // Also matches
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: sourcePlayer.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetPlayer.hand[0].id,
+        secondTargetCardId: targetPlayer.hand[1].id,
+      })
+
+      expect(result.outcome).toBe('match-blue')
+      expect(result.revealed).toContain(sourcePlayer.hand[0].id)
+      expect(result.revealed).toHaveLength(2)
+      // One of the target cards should be revealed
+      const targetRevealed =
+        result.revealed.includes(targetPlayer.hand[0].id) ||
+        result.revealed.includes(targetPlayer.hand[1].id)
+      expect(targetRevealed).toBe(true)
+      expect(sourcePlayer.hasDoubleDetector).toBe(false)
+    })
+
+    it('double detector miss: should place info token randomly and decrease dial', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const sourcePlayer = gameStateManager.state.players[0]
+      const targetPlayer = gameStateManager.state.players[1]
+      const initialDial = gameStateManager.state.detonatorDial
+
+      // Set up cards with known values - neither target matches
+      sourcePlayer.hand[0].number = 5
+      targetPlayer.hand[0].number = 7 // Doesn't match
+      targetPlayer.hand[1].number = 9 // Doesn't match
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: sourcePlayer.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetPlayer.hand[0].id,
+        secondTargetCardId: targetPlayer.hand[1].id,
+      })
+
+      expect(result.outcome).toBe('miss')
+      expect(result.revealed).toHaveLength(0)
+      expect(result.infoToken).toBe(true)
+      expect(result.detonatorDial).toBe(initialDial - 1)
+      expect(sourcePlayer.hasDoubleDetector).toBe(false)
+
+      // One of the target cards should have an info token
+      const hasInfoToken = targetPlayer.hand[0].infoToken || targetPlayer.hand[1].infoToken
+      expect(hasInfoToken).toBe(true)
+
+      // Source card should be added to known wires
+      expect(sourcePlayer.knownWires).toContain(sourcePlayer.hand[0])
+    })
+
+    it('double detector with yellow source: should work with yellow targets', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const sourcePlayer = gameStateManager.state.players[0]
+      const targetPlayer = gameStateManager.state.players[1]
+
+      // Set up cards - yellow source with yellow and blue targets
+      sourcePlayer.hand[0].color = 'yellow'
+      sourcePlayer.hand[0].number = 5.1
+      targetPlayer.hand[0].color = 'yellow' // Should match
+      targetPlayer.hand[0].number = 7.1
+      targetPlayer.hand[1].color = 'blue' // Should not match
+      targetPlayer.hand[1].number = 5
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: sourcePlayer.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetPlayer.hand[0].id,
+        secondTargetCardId: targetPlayer.hand[1].id,
+      })
+
+      expect(result.outcome).toBe('match-yellow')
+      expect(result.revealed).toContain(sourcePlayer.hand[0].id)
+      expect(result.revealed).toContain(targetPlayer.hand[0].id) // Yellow target should be revealed
+      expect(result.revealed).toHaveLength(2)
+      expect(sourcePlayer.hasDoubleDetector).toBe(false)
+    })
+
+    it('double detector with yellow source: should match with multiple yellow targets', () => {
+      gameStateManager.createNewGame({ numPlayers: 3 })
+      const sourcePlayer = gameStateManager.state.players[0]
+      const targetPlayer = gameStateManager.state.players[1]
+
+      // Set up cards - yellow source with two yellow targets
+      sourcePlayer.hand[0].color = 'yellow'
+      sourcePlayer.hand[0].number = 5.1
+      targetPlayer.hand[0].color = 'yellow'
+      targetPlayer.hand[0].number = 7.1
+      targetPlayer.hand[1].color = 'yellow'
+      targetPlayer.hand[1].number = 9.1
+
+      const result = gameStateManager.playRound({
+        sourcePlayerIdx: 0,
+        sourceCardId: sourcePlayer.hand[0].id,
+        targetPlayerIdx: 1,
+        targetCardId: targetPlayer.hand[0].id,
+        secondTargetCardId: targetPlayer.hand[1].id,
+      })
+
+      expect(result.outcome).toBe('match-yellow')
+      expect(result.revealed).toContain(sourcePlayer.hand[0].id)
+      expect(result.revealed).toHaveLength(2)
+      // One of the yellow targets should be revealed randomly
+      const yellowRevealed =
+        result.revealed.includes(targetPlayer.hand[0].id) ||
+        result.revealed.includes(targetPlayer.hand[1].id)
+      expect(yellowRevealed).toBe(true)
+      expect(sourcePlayer.hasDoubleDetector).toBe(false)
+    })
+  })
 })

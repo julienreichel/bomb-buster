@@ -587,6 +587,7 @@ describe('Player composable', () => {
           { id: 'b3', color: 'blue', number: 4, revealed: true },
           { id: 'b4', color: 'blue', number: 5, revealed: true },
         ],
+        doubleDetectorEnabled: false,
       })
       const other = new AIPlayer({
         id: 1,
@@ -612,9 +613,12 @@ describe('Player composable', () => {
       })
       const gs = new GameState({ players: [ai, other, other2], redWires: [r1] })
       const result = ai.pickPlayCards(gs)
-      expect(result.sourceCardId).toBe('b2')
-      expect(result.targetPlayerIdx).toBe(1)
-      expect(result.targetCardId).toBe('r1')
+      expect(result).toMatchObject({
+        sourceCardId: 'b2',
+        sourcePlayerIdx: 0,
+        targetCardId: 'r1',
+        targetPlayerIdx: 1,
+      })
     })
   })
 
@@ -773,6 +777,228 @@ describe('Player composable', () => {
       const ai = new AIPlayer({ id: 0, name: 'AI', hand: [] })
 
       expect(ai._allUnrevealedRed([])).toBe(false)
+    })
+  })
+
+  describe('Double Detector AI Logic', () => {
+    it('should use double detector when regular probability is low and safe double detector play exists', () => {
+      // Create AI player with double detector and a blue card
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'ai_blue1', color: 'blue', number: 5, revealed: false }],
+        hasDoubleDetector: true,
+      })
+
+      // Create other player with cards that guarantee a match
+      const otherPlayer = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'other_blue1', color: 'blue', number: 5, revealed: false, infoToken: false },
+          { id: 'other_blue2', color: 'blue', number: 6, revealed: false, infoToken: false },
+        ],
+      })
+
+      // Mock game state with candidates that show both cards are number 5
+      const gameState = {
+        players: [ai, otherPlayer],
+        // eslint-disable-next-line no-unused-vars
+        candidatesForSlot: (player, cardIndex) => {
+          // Both target cards are guaranteed to be blue number 5
+          return new Set([
+            { color: 'blue', number: 5 },
+            { color: 'blue', number: 6 },
+          ])
+        },
+        monteCarloSlotProbabilities: () => {
+          return [
+            {
+              info: { player: otherPlayer, card: otherPlayer.hand[0] },
+              slots: [
+                { color: 'blue', value: 5, probability: 0.7 },
+                { color: 'blue', value: 6, probability: 0.3 },
+              ],
+            },
+            {
+              info: { player: otherPlayer, card: otherPlayer.hand[1] },
+              slots: [
+                { color: 'blue', value: 5, probability: 0.3 },
+                { color: 'blue', value: 6, probability: 0.7 },
+              ],
+            },
+          ]
+        },
+      }
+
+      const result = ai._pickBestProbability(gameState)
+
+      // Should return double detector play
+      expect(result).toBeTruthy()
+      expect(result).toMatchObject({
+        doubleDetector: true,
+        secondTargetCardId: 'other_blue2',
+        sourceCardId: 'ai_blue1',
+        sourcePlayerIdx: 0,
+        targetCardId: 'other_blue1',
+        targetPlayerIdx: 1,
+      })
+    })
+
+    it('should not use double detector when player does not have it', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'ai_blue1', color: 'blue', number: 5, revealed: false }],
+      })
+      // Explicitly set hasDoubleDetector to false after construction
+      ai.hasDoubleDetector = false
+
+      const result = ai._checkDoubleDetectorAdvantage({}, [], 0.7)
+      expect(result).toBeNull()
+    })
+
+    it('should not use double detector when advantage is insufficient', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'ai_blue1', color: 'blue', number: 5, revealed: false }],
+        hasDoubleDetector: true,
+      })
+
+      const otherPlayer = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'other_unknown1', color: 'blue', number: 1, revealed: false, infoToken: false },
+          { id: 'other_unknown2', color: 'blue', number: 6, revealed: false, infoToken: false },
+        ],
+      })
+      const otherPlayer2 = new AIPlayer({
+        id: 2,
+        name: 'Other2',
+        hand: [
+          { id: 'other_unknown3', color: 'red', number: 1.5, revealed: false, infoToken: false },
+          { id: 'other_unknown4', color: 'blue', number: 5, revealed: false, infoToken: false },
+        ],
+      })
+
+      const gameState = {
+        players: [ai, otherPlayer, otherPlayer2],
+      }
+
+      const probabilities = [
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[0] },
+          slots: [{ color: 'blue', value: 5, probability: 0.1 }],
+        },
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[1] },
+          slots: [{ color: 'blue', value: 5, probability: 0.4 }],
+        },
+        {
+          info: { player: otherPlayer2, card: otherPlayer2.hand[0] },
+          slots: [{ color: 'blue', value: 5, probability: 0.1 }],
+        },
+        {
+          info: { player: otherPlayer2, card: otherPlayer2.hand[1] },
+          slots: [{ color: 'blue', value: 5, probability: 0.4 }],
+        },
+      ]
+      const result = ai._checkDoubleDetectorAdvantage(gameState, probabilities, 0.4)
+      expect(result).toBeNull()
+    })
+
+    it('should use double detector when it provides significant advantage', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'ai_yellow1', color: 'yellow', number: 3.1, revealed: false }],
+        hasDoubleDetector: true,
+      })
+
+      const otherPlayer = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'other_other_blue', color: 'blue', number: 7, revealed: false, infoToken: false },
+          { id: 'other_yellow2', color: 'yellow', number: 8.1, revealed: false, infoToken: false },
+        ],
+      })
+
+      const gameState = {
+        players: [ai, otherPlayer],
+      }
+
+      // Single card probability is 0.5, double detector gives 1.0 (improvement of 0.5 > 0.2 threshold)
+      const probabilities = [
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[0] },
+          slots: [
+            { color: 'blue', value: 7, probability: 0.5 },
+            { color: 'yellow', value: 8.1, probability: 0.5 },
+          ],
+        },
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[1] },
+          slots: [
+            { color: 'blue', value: 7, probability: 0.5 },
+            { color: 'yellow', value: 8.1, probability: 0.5 },
+          ],
+        },
+      ]
+      const result = ai._checkDoubleDetectorAdvantage(gameState, probabilities, 0.5)
+      expect(result).toBeTruthy()
+      expect(result).toMatchObject({
+        doubleDetector: true,
+        secondTargetCardId: 'other_yellow2',
+        sourceCardId: 'ai_yellow1',
+        sourcePlayerIdx: 0,
+        targetCardId: 'other_other_blue',
+        targetPlayerIdx: 1,
+      })
+    })
+
+    it('should not use double detector when doubleDetectorEnabled is false', () => {
+      const ai = new AIPlayer({
+        id: 0,
+        name: 'AI',
+        hand: [{ id: 'ai_yellow1', color: 'yellow', number: 3.1, revealed: false }],
+        doubleDetectorEnabled: false, // Feature disabled globally
+      })
+
+      const otherPlayer = new AIPlayer({
+        id: 1,
+        name: 'Other',
+        hand: [
+          { id: 'other_other_blue', color: 'blue', number: 7, revealed: false, infoToken: false },
+          { id: 'other_yellow2', color: 'yellow', number: 8.1, revealed: false, infoToken: false },
+        ],
+      })
+
+      const gameState = {
+        players: [ai, otherPlayer],
+      }
+
+      // Even with good probabilities, should not use double detector when feature is disabled
+      const probabilities = [
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[0] },
+          slots: [
+            { color: 'blue', value: 7, probability: 0.5 },
+            { color: 'yellow', value: 8.1, probability: 0.5 },
+          ],
+        },
+        {
+          info: { player: otherPlayer, card: otherPlayer.hand[1] },
+          slots: [
+            { color: 'blue', value: 7, probability: 0.5 },
+            { color: 'yellow', value: 8.1, probability: 0.5 },
+          ],
+        },
+      ]
+      const result = ai._checkDoubleDetectorAdvantage(gameState, probabilities, 0.5)
+      expect(result).toBeNull()
     })
   })
 })

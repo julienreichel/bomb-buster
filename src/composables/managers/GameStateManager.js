@@ -14,6 +14,7 @@ export function useGameStateManager() {
   function createNewGame({
     numPlayers = 4,
     hasHuman = true,
+    doubleDetectorEnabled = true,
     yellow: { created: yellowCreated = 0, onBoard: yellowOnBoard = 0 } = {},
     red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
     autoStart = false,
@@ -30,6 +31,7 @@ export function useGameStateManager() {
             id: i,
             name: 'Human',
             hand: [],
+            doubleDetectorEnabled,
           }),
         )
       } else {
@@ -38,6 +40,7 @@ export function useGameStateManager() {
             id: i,
             name: `AI ${i + 1}`,
             hand: [],
+            doubleDetectorEnabled,
           }),
         )
       }
@@ -216,6 +219,7 @@ export function useGameStateManager() {
    * @param {string} sourceCardId
    * @param {number} targetPlayerIdx
    * @param {string} targetCardId
+   * @param {string} secondTargetCardId - Second target card when using double detector (optional)
    * @returns {Object} result { outcome, detonatorDial, revealed, infoToken }
    */
   function revealCardAndRemoveKnown(player, card) {
@@ -229,16 +233,30 @@ export function useGameStateManager() {
       }
     }
   }
-  function playRound({ sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId }) {
+  function playRound({
+    sourcePlayerIdx,
+    sourceCardId,
+    targetPlayerIdx,
+    targetCardId,
+    secondTargetCardId = null,
+  }) {
     function logAndReturn(result) {
-      gameStateInstance.history.push({
+      const historyEntry = {
         type: 'play',
         sourcePlayerIdx,
         sourceCardId,
         targetPlayerIdx,
         targetCardId,
         result,
-      })
+      }
+
+      // Add double detector information if it was used
+      if (secondTargetCardId) {
+        historyEntry.doubleDetector = true
+        historyEntry.secondTargetCardId = secondTargetCardId
+      }
+
+      gameStateInstance.history.push(historyEntry)
       return result
     }
     function invalidPick(outcome = 'invalid-pick') {
@@ -258,6 +276,13 @@ export function useGameStateManager() {
     if (!sourceCard) return invalidPick()
     if (sourceCard.revealed) return invalidPick()
 
+    // Check if using double detector is valid
+    if (secondTargetCardId) {
+      if (!sourcePlayer.hasDoubleDetector) {
+        return invalidPick()
+      }
+    }
+
     // Special red logic: if source card is red and all cards in player's hand are revealed, reveal all red cards in that hand
     if (sourceCard.color === 'red') {
       const playerRedCards = sourcePlayer.hand.filter((c) => c.color === 'red')
@@ -275,6 +300,86 @@ export function useGameStateManager() {
           infoToken: false,
         })
       }
+    }
+
+    // Double detector logic: allows selecting two target cards
+    if (secondTargetCardId) {
+      if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
+      const targetPlayer = players[targetPlayerIdx]
+      if (!targetPlayer) return invalidPick()
+
+      const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)
+      const secondTargetCard = targetPlayer.hand.find((c) => c.id === secondTargetCardId)
+
+      if (!targetCard || !secondTargetCard) return invalidPick()
+      if (targetCard.revealed || secondTargetCard.revealed) return invalidPick()
+      if (targetCard.id === secondTargetCard.id) return invalidPick()
+
+      // Use the double detector
+      sourcePlayer.hasDoubleDetector = false
+
+      // Check if either target matches the source
+      let firstMatches = false
+      let secondMatches = false
+
+      if (sourceCard.color === 'blue') {
+        // Blue cards match by number
+        firstMatches = sourceCard.number === targetCard.number
+        secondMatches = sourceCard.number === secondTargetCard.number
+      } else if (sourceCard.color === 'yellow') {
+        // Yellow cards match with other yellow cards
+        firstMatches = targetCard.color === 'yellow'
+        secondMatches = secondTargetCard.color === 'yellow'
+      }
+
+      let outcome = ''
+      let revealed = []
+      let infoToken = false
+
+      if (firstMatches && secondMatches) {
+        // Both match: reveal one at random
+        const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
+        revealCardAndRemoveKnown(targetPlayer, randomCard)
+        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
+        outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
+        revealed = [sourceCard.id, randomCard.id]
+      } else if (firstMatches || secondMatches) {
+        // One matches: reveal both source and matching target
+        const matchingCard = firstMatches ? targetCard : secondTargetCard
+        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
+        revealCardAndRemoveKnown(targetPlayer, matchingCard)
+        outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
+        revealed = [sourceCard.id, matchingCard.id]
+      } else {
+        // Neither matches: place info token on one at random and decrease detonator dial
+        // Don't reveal red cards - only place info token, unless all targets are red
+        const nonRedTargets = [targetCard, secondTargetCard].filter((card) => card.color !== 'red')
+        if (nonRedTargets.length > 0) {
+          // Place info token on a random non-red card
+          const randomCard = nonRedTargets[Math.floor(Math.random() * nonRedTargets.length)]
+          randomCard.infoToken = true
+          gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
+          sourcePlayer.knownWires.push(sourceCard) // Add to known wires
+          outcome = 'miss'
+          revealed = []
+          infoToken = true
+        } else {
+          // Both targets are red - trigger explosion
+          const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
+          revealCardAndRemoveKnown(targetPlayer, randomCard)
+          gameStateInstance.detonatorDial = 0
+          outcome = 'hit-red'
+          revealed = [randomCard.id]
+          infoToken = false
+        }
+      }
+
+      return logAndReturn({
+        outcome,
+        detonatorDial: gameStateInstance.detonatorDial,
+        revealed,
+        infoToken,
+      })
     }
 
     if (targetPlayerIdx == null) return invalidPick('incomplete-pick')

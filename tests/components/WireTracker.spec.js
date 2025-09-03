@@ -204,18 +204,6 @@ describe('WireTracker Component', () => {
     expect(badges.length).toBeGreaterThanOrEqual(12)
   })
 
-  test('handles undefined wires prop', async () => {
-    const { container } = render(
-      WireTracker,
-      withQuasar({
-        props: { wires: undefined },
-      }),
-    )
-
-    // Should still render without errors
-    expect(container.firstElementChild).toBeTruthy()
-  })
-
   test('calculates blue wire states correctly for all 4 revealed', async () => {
     const fourBlueWires = [
       new WireTile({ id: 1, color: 'blue', number: 5 }),

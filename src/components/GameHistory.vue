@@ -49,7 +49,16 @@ const movesToShow = computed(() => {
 
 function moveSummary(move) {
   if (!move) return ''
-  const { type, sourcePlayerIdx, sourceCardId, targetPlayerIdx, targetCardId, result } = move
+  const {
+    type,
+    sourcePlayerIdx,
+    sourceCardId,
+    targetPlayerIdx,
+    targetCardId,
+    secondTargetCardId,
+    doubleDetector,
+    result,
+  } = move
   const src = props.players[sourcePlayerIdx]?.name ?? `P${sourcePlayerIdx}`
   const tgt =
     targetPlayerIdx != null && props.players[targetPlayerIdx]
@@ -58,7 +67,14 @@ function moveSummary(move) {
   let desc = ''
   if (type === 'play') {
     desc = `${src} played ${sourceCardId}`
-    if (tgt && targetCardId) desc += ` vs ${tgt}'s ${targetCardId}`
+    if (doubleDetector) {
+      desc += ' [DOUBLE DETECTOR]'
+      if (tgt && targetCardId && secondTargetCardId) {
+        desc += ` vs ${tgt}'s ${targetCardId} & ${secondTargetCardId}`
+      }
+    } else {
+      if (tgt && targetCardId) desc += ` vs ${tgt}'s ${targetCardId}`
+    }
     if (result?.outcome) desc += ` → ${result.outcome.replace(/-/g, ' ')}`
     if (result?.infoToken) desc += ' [info token]'
     if (typeof result?.detonatorDial === 'number') desc += ` [dial: ${result.detonatorDial}]`

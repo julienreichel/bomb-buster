@@ -10,6 +10,10 @@ import {
   QList,
   QItem,
   QItemSection,
+  QChip,
+  QTooltip,
+  QLinearProgress,
+  QTable,
 } from 'quasar'
 
 export const quasarOptions = {
@@ -26,6 +30,10 @@ export const quasarOptions = {
     QList,
     QItem,
     QItemSection,
+    QChip,
+    QTooltip,
+    QLinearProgress,
+    QTable,
   },
 }
 

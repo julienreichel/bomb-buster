@@ -244,7 +244,7 @@ export default class GameState {
       .map(() => ({}))
 
     let successRun = 0
-    for (let sim = 0; sim < N; ++sim) {
+    for (let sim = 0; (sim < N || successRun < 10) && sim < N * 10; ++sim) {
       // Shuffle pool
       let randomYellow = []
       let randomRed = []
@@ -360,7 +360,7 @@ export default class GameState {
         total += count
         const digit = (Number(val) * 10) % 10
         const color = digit === 0 ? 'blue' : digit === 1 ? 'yellow' : 'red'
-        slots.push({ value: val, count, color })
+        slots.push({ value: Number(val), count, color })
       })
       slots.sort((a, b) => b.count - a.count)
 

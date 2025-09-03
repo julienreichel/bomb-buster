@@ -11,7 +11,8 @@
         <div class="text-h6">Statistics</div>
         <div>
           Players: {{ stats.numPlayers }}, Yellow: {{ stats.yellowOnBoard }} /
-          {{ stats.yellowCreated }}, Red: {{ stats.redOnBoard }} / {{ stats.redCreated }}, Runs:
+          {{ stats.yellowCreated }}, Red: {{ stats.redOnBoard }} / {{ stats.redCreated }}, Double
+          Detector: {{ stats.doubleDetectorEnabled ? 'Enabled' : 'Disabled' }}, Runs:
           {{ stats.totalRuns }}
         </div>
         <q-table :rows="tableRows" :columns="tableColumns" row-key="players" flat dense />
@@ -27,6 +28,11 @@ import { useGameStateManager } from '../composables/managers/GameStateManager.js
 
 const route = useRoute()
 const numPlayers = computed(() => parseInt(route.query.numPlayers) || 4)
+const doubleDetectorEnabled = computed(() =>
+  route.query.doubleDetectorEnabled === undefined
+    ? true
+    : route.query.doubleDetectorEnabled === '1' || route.query.doubleDetectorEnabled === true,
+)
 const yellowCreated = computed(() => parseInt(route.query.yellowCreated) || 0)
 const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard) || 0)
 const redCreated = computed(() => parseInt(route.query.redCreated) || 0)
@@ -89,8 +95,8 @@ const tableRows = computed(() => {
   return rows
 })
 
-function getStatsKey(p, yc, yob, rc, rob) {
-  return `sim-stats-p${p}-yc${yc}-yob${yob}-rc${rc}-rob${rob}`
+function getStatsKey(p, yc, yob, rc, rob, dd) {
+  return `sim-stats-p${p}-yc${yc}-yob${yob}-rc${rc}-rob${rob}-dd${dd ? 1 : 0}`
 }
 
 function runSimulations() {
@@ -116,6 +122,7 @@ function runSimulations() {
       yellowOnBoard.value,
       redCreated.value,
       redOnBoard.value,
+      doubleDetectorEnabled.value,
     )
     let stored = localStorage.getItem(key)
     let stat = stored
@@ -134,6 +141,7 @@ function runSimulations() {
       manager.createNewGame({
         numPlayers: numPlayers.value,
         hasHuman: false,
+        doubleDetectorEnabled: doubleDetectorEnabled.value,
         yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
         red: { created: redCreated.value, onBoard: redOnBoard.value },
         autoStart: true,
@@ -153,6 +161,7 @@ function runSimulations() {
       yellowOnBoard: stat.yellowOnBoard,
       redCreated: stat.redCreated,
       redOnBoard: stat.redOnBoard,
+      doubleDetectorEnabled: doubleDetectorEnabled.value,
       totalRuns: stat.totalRuns,
       results: Object.entries(stat.dialCounts)
         .map(([dial, count]) => ({ dial, count }))

@@ -1,7 +1,29 @@
 <template>
   <q-card>
     <q-card-section>
-      <div class="text-h6">{{ player && player.name ? player.name : 'Player' }}'s Hand</div>
+      <div class="text-h6 row items-center q-gutter-sm">
+        <span>{{ player && player.name ? player.name : 'Player' }}'s Hand</span>
+        <q-chip
+          v-if="player.isAI && player.hasDoubleDetector"
+          icon="search"
+          color="primary"
+          text-color="white"
+          size="sm"
+          dense
+        >
+          Double Detector
+        </q-chip>
+        <q-chip
+          v-if="player.isAI && !player.hasDoubleDetector"
+          icon="search_off"
+          color="grey"
+          text-color="white"
+          size="sm"
+          dense
+        >
+          No Double Detector
+        </q-chip>
+      </div>
       <div class="row q-gutter-sm">
         <wire-card
           v-for="(card, idx) in player.hand"

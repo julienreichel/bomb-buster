@@ -236,4 +236,48 @@ describe('PlayerDeck Component', () => {
 
     expect(wrapper.text()).toContain('Known wires:')
   })
+
+  describe('Double Detector Indicator', () => {
+    it('shows double detector chip for AI player with double detector', async () => {
+      const { AIPlayer } = await import('../../src/composables/models/Player.js')
+      const player = new AIPlayer({ id: 1, name: 'AI Player', doubleDetectorEnabled: true })
+
+      const wrapper = mount(
+        PlayerDeck,
+        withQuasar({
+          props: { player },
+        }),
+      )
+
+      expect(wrapper.text()).toContain('Double Detector')
+    })
+
+    it('shows no double detector chip for AI player without double detector', async () => {
+      const { AIPlayer } = await import('../../src/composables/models/Player.js')
+      const player = new AIPlayer({ id: 1, name: 'AI Player', doubleDetectorEnabled: false })
+
+      const wrapper = mount(
+        PlayerDeck,
+        withQuasar({
+          props: { player },
+        }),
+      )
+
+      expect(wrapper.text()).toContain('No Double Detector')
+    })
+
+    it('does not show double detector chip for human players', async () => {
+      const player = createTestPlayer('Human Player')
+
+      const wrapper = mount(
+        PlayerDeck,
+        withQuasar({
+          props: { player },
+        }),
+      )
+
+      expect(wrapper.text()).not.toContain('Double Detector')
+      expect(wrapper.text()).not.toContain('No Double Detector')
+    })
+  })
 })

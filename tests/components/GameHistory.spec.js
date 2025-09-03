@@ -238,4 +238,49 @@ describe('GameHistory Component', () => {
     // Should handle gracefully and show empty strings
     expect(wrapper.findAll('.text-body2')).toHaveLength(3)
   })
+
+  it('displays double detector usage in move history', () => {
+    const moves = [
+      createMockMove({
+        sourcePlayerIdx: 0,
+        sourceCardId: 'b5',
+        targetPlayerIdx: 1,
+        targetCardId: 'b7',
+        secondTargetCardId: 'b8',
+        doubleDetector: true,
+        result: {
+          outcome: 'match-blue',
+          infoToken: false,
+          detonatorDial: 4,
+        },
+      }),
+      createMockMove({
+        sourcePlayerIdx: 1,
+        sourceCardId: 'y1',
+        targetPlayerIdx: 2,
+        targetCardId: 'r3',
+        // Regular move without double detector
+      }),
+    ]
+
+    const wrapper = mount(
+      GameHistory,
+      withQuasar({
+        props: {
+          moveHistory: moves,
+          players: createMockPlayers(),
+        },
+      }),
+    )
+
+    const historyText = wrapper.text()
+
+    // Check that double detector is indicated
+    expect(historyText).toContain('DOUBLE DETECTOR')
+    expect(historyText).toContain("Alice played b5 [DOUBLE DETECTOR] vs Bob's b7 & b8")
+    expect(historyText).toContain('match blue')
+
+    // Check that regular move doesn't show double detector
+    expect(historyText).toContain("Bob played y1 vs Charlie's r3")
+  })
 })

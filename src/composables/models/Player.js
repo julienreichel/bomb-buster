@@ -1,10 +1,11 @@
 // Player model
 export class Player {
-  constructor({ id, name, hand = [] }) {
+  constructor({ id, name, hand = [], doubleDetectorEnabled = true }) {
     this.id = id
     this.name = name
     this.hand = hand // Array of WireTile
     this.knownWires = [] // Array of WireTile known to this player
+    this.hasDoubleDetector = doubleDetectorEnabled // Global flag to enable/disable double detector feature
     this.verbose = false
   }
   // Placeholder for pickCard
@@ -226,7 +227,7 @@ export class AIPlayer extends Player {
         })
       })
     if (best) {
-      console.log('Deterministic match found')
+      if (this.verbose) console.log('Deterministic match found')
       return best
     }
     // use monteCarloSlotProbabilities
@@ -261,7 +262,126 @@ export class AIPlayer extends Player {
       })
     })
     if (this.verbose) console.log('Probabilistic match found:', bestProb, slot)
+
+    // Check for double detector usage if no deterministic solution and bestProb < 90%
+    if (!best || bestProb < 0.9) {
+      const doubleDetectorPlay = this._checkDoubleDetectorAdvantage(
+        gameState,
+        probabilities,
+        bestProb,
+      )
+      if (doubleDetectorPlay) {
+        if (this.verbose)
+          console.log('Double detector advantageous play found:', doubleDetectorPlay)
+        return doubleDetectorPlay
+      }
+    }
+
     return best || null
+  }
+
+  _checkDoubleDetectorAdvantage(gameState, singleCardProbabilities, bestSingleProb) {
+    // Only use double detector if we still have it
+    if (!this.hasDoubleDetector) return null
+
+    const myCards = this.hand.filter((c) => !c.revealed)
+    let bestDoubleDetectorPlay = null
+    let bestDoubleDetectorProb = bestSingleProb
+
+    // Group probabilities by player to find best pairs within same player
+    const probabilitiesByPlayer = new Map()
+    singleCardProbabilities.forEach((prob) => {
+      const playerId = prob.info.player.id
+      if (!probabilitiesByPlayer.has(playerId)) {
+        probabilitiesByPlayer.set(playerId, [])
+      }
+      probabilitiesByPlayer.get(playerId).push(prob)
+    })
+
+    // Use existing probability data to find best double detector combinations
+    for (const myCard of myCards) {
+      // Count total matching cards across OTHER players' hands for this myCard value
+      const myCardValue = myCard.color === 'blue' ? myCard.number : myCard.color
+      const totalMatchingCards = gameState.players
+        .filter((p) => p.id !== this.id)
+        .reduce((count, player) => {
+          return (
+            count +
+            player.hand.filter((card) => {
+              if (card.revealed) return false
+              const cardValue = card.color === 'blue' ? card.number : card.color
+              return cardValue === myCardValue
+            }).length
+          )
+        }, 0)
+
+      // Check each player that has at least 2 cards
+      for (const [, playerProbs] of probabilitiesByPlayer) {
+        if (playerProbs.length < 2) continue
+
+        // Check all combinations of 2 cards from this player
+        for (let i = 0; i < playerProbs.length - 1; i++) {
+          for (let j = i + 1; j < playerProbs.length; j++) {
+            const prob1 = playerProbs[i]
+            const prob2 = playerProbs[j]
+
+            // Calculate probability for this specific pair directly
+            const prob1Value = this._getProbFromSlot(myCard, prob1.slots)
+            const prob2Value = this._getProbFromSlot(myCard, prob2.slots)
+            if (prob1Value === 0 || prob2Value === 0) continue
+
+            // Apply joint probability calculation based on number of matching cards
+            let doubleDetectorProb
+            if (totalMatchingCards === 1) {
+              // Simple case: only one matching card, no joint probability needed
+              doubleDetectorProb = Math.min(1.0, prob1Value + prob2Value)
+            } else {
+              // Multiple matching cards: subtract joint probability to avoid double-counting
+              // P(A or B) = P(A) + P(B) - P(A and B)
+              // When events are independent: P(A and B) = P(A) * P(B)
+              doubleDetectorProb = Math.min(1.0, prob1Value + prob2Value - prob1Value * prob2Value)
+            }
+
+            if (doubleDetectorProb > bestDoubleDetectorProb) {
+              bestDoubleDetectorProb = doubleDetectorProb
+              bestDoubleDetectorPlay = {
+                sourcePlayerIdx: this.id,
+                sourceCardId: myCard.id,
+                targetPlayerIdx: prob1.info.player.id,
+                targetCardId: prob1.info.card.id,
+                secondTargetCardId: prob2.info.card.id,
+                doubleDetector: true,
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // Only use double detector if it significantly improves our probability
+    // Require at least 10% improvement to justify using the double detector
+    if (bestDoubleDetectorProb > bestSingleProb + 0.15 || bestDoubleDetectorProb > 0.9) {
+      if (this.verbose) {
+        console.log(
+          `Double detector improves probability from ${bestSingleProb} to ${bestDoubleDetectorProb}`,
+        )
+      }
+      return bestDoubleDetectorPlay
+    }
+
+    return null
+  }
+
+  _getProbFromSlot(myCard, slots) {
+    for (const slot of slots) {
+      if (
+        (myCard.color === 'blue' && slot.value === myCard.number) ||
+        (myCard.color === 'yellow' && slot.color === 'yellow')
+      ) {
+        return slot.probability
+      }
+    }
+    return 0
   }
 
   _pickEdgeStrategy(gameState) {
