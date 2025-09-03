@@ -233,6 +233,125 @@ export function useGameStateManager() {
       }
     }
   }
+
+  function handleDoubleDetectorPlay({
+    sourcePlayer,
+    sourceCard,
+    targetPlayer,
+    targetCard,
+    secondTargetCard,
+    logAndReturn,
+  }) {
+    // Use the double detector
+    sourcePlayer.hasDoubleDetector = false
+
+    // Check if either target matches the source
+    const firstMatches = sourceCard.matches(targetCard)
+    const secondMatches = sourceCard.matches(secondTargetCard)
+
+    let outcome = ''
+    let revealed = []
+    let infoToken = false
+
+    if (firstMatches && secondMatches) {
+      // Both match: reveal one at random
+      const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
+      revealCardAndRemoveKnown(targetPlayer, randomCard)
+      revealCardAndRemoveKnown(sourcePlayer, sourceCard)
+      outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
+      revealed = [sourceCard.id, randomCard.id]
+    } else if (firstMatches || secondMatches) {
+      // One matches: reveal both source and matching target
+      const matchingCard = firstMatches ? targetCard : secondTargetCard
+      revealCardAndRemoveKnown(sourcePlayer, sourceCard)
+      revealCardAndRemoveKnown(targetPlayer, matchingCard)
+      outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
+      revealed = [sourceCard.id, matchingCard.id]
+    } else {
+      // Neither matches: place info token on one at random and decrease detonator dial
+      // Don't reveal red cards - only place info token, unless all targets are red
+      const nonRedTargets = [targetCard, secondTargetCard].filter((card) => card.color !== 'red')
+      if (nonRedTargets.length > 0) {
+        // Place info token on a random non-red card
+        const randomCard = nonRedTargets[Math.floor(Math.random() * nonRedTargets.length)]
+        randomCard.infoToken = true
+        gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
+        sourcePlayer.knownWires.push(sourceCard) // Add to known wires
+        outcome = 'miss'
+        revealed = []
+        infoToken = true
+      } else {
+        // Both targets are red - trigger explosion
+        const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
+        revealCardAndRemoveKnown(targetPlayer, randomCard)
+        gameStateInstance.detonatorDial = 0
+        outcome = 'hit-red'
+        revealed = [randomCard.id]
+        infoToken = false
+      }
+    }
+
+    return logAndReturn({
+      outcome,
+      detonatorDial: gameStateInstance.detonatorDial,
+      revealed,
+      infoToken,
+    })
+  }
+
+  function handleMatchingCards({
+    sourcePlayer,
+    sourceCard,
+    targetPlayer,
+    targetCard,
+    sourcePlayerIdx,
+    targetPlayerIdx,
+    players,
+    logAndReturn,
+    invalidPick,
+  }) {
+    const cardColor = sourceCard.color
+    let toReveal = []
+
+    if (sourcePlayerIdx === targetPlayerIdx) {
+      // Both cards from same player: check if all matching cards in other players' hands are revealed
+      let allRevealed = true
+      for (let i = 0; i < players.length; i++) {
+        if (i === sourcePlayerIdx) continue
+        for (const card of players[i].hand) {
+          const isMatchingCard = sourceCard.matches(card)
+          if (isMatchingCard && !card.revealed) {
+            allRevealed = false
+            break
+          }
+        }
+        if (!allRevealed) break
+      }
+      if (!allRevealed) return invalidPick()
+
+      // Reveal all matching cards in the source player's hand
+      for (const card of sourcePlayer.hand) {
+        const shouldReveal = sourceCard.matches(card)
+        if (shouldReveal) {
+          revealCardAndRemoveKnown(sourcePlayer, card)
+          toReveal.push(card.id)
+        }
+      }
+    } else {
+      // Cards from different players: only reveal the selected cards
+      revealCardAndRemoveKnown(sourcePlayer, sourceCard)
+      toReveal.push(sourceCard.id)
+      revealCardAndRemoveKnown(targetPlayer, targetCard)
+      toReveal.push(targetCard.id)
+    }
+
+    return logAndReturn({
+      outcome: `match-${cardColor}`,
+      detonatorDial: gameStateInstance.detonatorDial,
+      revealed: toReveal,
+      infoToken: false,
+    })
+  }
   function playRound({
     sourcePlayerIdx,
     sourceCardId,
@@ -318,63 +437,13 @@ export function useGameStateManager() {
       if (targetCard.revealed || secondTargetCard.revealed) return invalidPick()
       if (targetCard.id === secondTargetCard.id) return invalidPick()
 
-      // Use the double detector
-      sourcePlayer.hasDoubleDetector = false
-
-      // Check if either target matches the source
-      let firstMatches = false
-      let secondMatches = false
-
-      firstMatches = sourceCard.matches(targetCard)
-      secondMatches = sourceCard.matches(secondTargetCard)
-
-      let outcome = ''
-      let revealed = []
-      let infoToken = false
-
-      if (firstMatches && secondMatches) {
-        // Both match: reveal one at random
-        const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
-        revealCardAndRemoveKnown(targetPlayer, randomCard)
-        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
-        outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
-        revealed = [sourceCard.id, randomCard.id]
-      } else if (firstMatches || secondMatches) {
-        // One matches: reveal both source and matching target
-        const matchingCard = firstMatches ? targetCard : secondTargetCard
-        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
-        revealCardAndRemoveKnown(targetPlayer, matchingCard)
-        outcome = sourceCard.color === 'blue' ? 'match-blue' : 'match-yellow'
-        revealed = [sourceCard.id, matchingCard.id]
-      } else {
-        // Neither matches: place info token on one at random and decrease detonator dial
-        // Don't reveal red cards - only place info token, unless all targets are red
-        const nonRedTargets = [targetCard, secondTargetCard].filter((card) => card.color !== 'red')
-        if (nonRedTargets.length > 0) {
-          // Place info token on a random non-red card
-          const randomCard = nonRedTargets[Math.floor(Math.random() * nonRedTargets.length)]
-          randomCard.infoToken = true
-          gameStateInstance.detonatorDial = Math.max(0, gameStateInstance.detonatorDial - 1)
-          sourcePlayer.knownWires.push(sourceCard) // Add to known wires
-          outcome = 'miss'
-          revealed = []
-          infoToken = true
-        } else {
-          // Both targets are red - trigger explosion
-          const randomCard = Math.random() < 0.5 ? targetCard : secondTargetCard
-          revealCardAndRemoveKnown(targetPlayer, randomCard)
-          gameStateInstance.detonatorDial = 0
-          outcome = 'hit-red'
-          revealed = [randomCard.id]
-          infoToken = false
-        }
-      }
-
-      return logAndReturn({
-        outcome,
-        detonatorDial: gameStateInstance.detonatorDial,
-        revealed,
-        infoToken,
+      return handleDoubleDetectorPlay({
+        sourcePlayer,
+        sourceCard,
+        targetPlayer,
+        targetCard,
+        secondTargetCard,
+        logAndReturn,
       })
     }
 
@@ -387,48 +456,16 @@ export function useGameStateManager() {
 
     // Blue and Yellow logic: if cards match (blue same number or yellow same color)
     if (sourceCard.matches(targetCard)) {
-      const cardColor = sourceCard.color
-      let toReveal = []
-
-      if (sourcePlayerIdx === targetPlayerIdx) {
-        // Both cards from same player: check if all matching cards in other players' hands are revealed
-        let allRevealed = true
-        for (let i = 0; i < players.length; i++) {
-          if (i === sourcePlayerIdx) continue
-          for (const card of players[i].hand) {
-            const isMatchingCard = sourceCard.matches(card)
-            if (isMatchingCard && !card.revealed) {
-              allRevealed = false
-              break
-            }
-          }
-          if (!allRevealed) break
-        }
-        if (!allRevealed) return invalidPick()
-
-        // Reveal all matching cards in the source player's hand
-        for (const card of sourcePlayer.hand) {
-          const shouldReveal = sourceCard.matches(card)
-          if (shouldReveal) {
-            revealCardAndRemoveKnown(sourcePlayer, card)
-            toReveal.push(card.id)
-          }
-        }
-      } else {
-        // Cards from different players: only reveal the selected cards
-        revealCardAndRemoveKnown(sourcePlayer, sourceCard)
-        toReveal.push(sourceCard.id)
-        revealCardAndRemoveKnown(targetPlayer, targetCard)
-        toReveal.push(targetCard.id)
-      }
-
-      outcome = `match-${cardColor}`
-      revealed = toReveal
-      return logAndReturn({
-        outcome,
-        detonatorDial: gameStateInstance.detonatorDial,
-        revealed,
-        infoToken,
+      return handleMatchingCards({
+        sourcePlayer,
+        sourceCard,
+        targetPlayer,
+        targetCard,
+        sourcePlayerIdx,
+        targetPlayerIdx,
+        players,
+        logAndReturn,
+        invalidPick,
       })
     }
 
