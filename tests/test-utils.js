@@ -38,10 +38,31 @@ export const quasarOptions = {
 }
 
 export function withQuasar(component) {
-  return {
+  const baseConfig = {
     global: {
       plugins: [[Quasar, quasarOptions]],
     },
+  }
+
+  if (!component) {
+    return baseConfig
+  }
+
+  // If component has global config, we need to merge carefully
+  if (component.global) {
+    return {
+      ...component,
+      global: {
+        ...baseConfig.global,
+        ...component.global,
+        plugins: [...baseConfig.global.plugins, ...(component.global.plugins || [])],
+      },
+    }
+  }
+
+  // If no global config, use the simple spread
+  return {
+    ...baseConfig,
     ...component,
   }
 }

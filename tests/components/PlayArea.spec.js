@@ -860,9 +860,9 @@ describe('PlayArea Component', () => {
         }),
       )
 
-      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      const doubleDetectorBtn = wrapper.find('button')
       expect(doubleDetectorBtn.exists()).toBe(true)
-      expect(doubleDetectorBtn.attributes('label')).toBe('Double Detector')
+      expect(doubleDetectorBtn.text()).toContain('Double Detector')
     })
 
     it('hides double detector button when player does not have double detector', () => {
@@ -917,11 +917,11 @@ describe('PlayArea Component', () => {
 
       expect(wrapper.vm.doubleDetector).toBe(false)
 
-      const doubleDetectorBtn = wrapper.find('[icon="leak_add"]')
+      const doubleDetectorBtn = wrapper.find('button')
       await doubleDetectorBtn.trigger('click')
 
       expect(wrapper.vm.doubleDetector).toBe(true)
-      expect(doubleDetectorBtn.attributes('label')).toBe('Double Detector Active')
+      expect(doubleDetectorBtn.text()).toContain('Double Detector Active')
     })
 
     it('resets target selections when toggling double detector', async () => {
