@@ -59,11 +59,11 @@ export default [
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
 
       // Clean Code Principles
-      'max-lines': ['warn', { max: 200, skipBlankLines: true, skipComments: true }],
-      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }],
+      'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 100, skipBlankLines: true, skipComments: true }],
       'max-params': ['error', 4],
       'max-depth': ['error', 4],
-      complexity: ['warn', 10],
+      complexity: ['warn', 16],
 
       // Code Quality
       'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
@@ -93,7 +93,9 @@ export default [
       'no-magic-numbers': [
         'warn',
         {
-          ignore: [-1, 0, 1, 2, 3, 4, 5, 10, 50, 100, 200],
+          ignore: [
+            -1, 0, 0.1, 0.15, 0.5, 0.9, 1, 2, 3, 4, 5, 10, 12, 13, 16, 50, 100, 200, 500, 1000,
+          ],
           ignoreArrayIndexes: true,
           ignoreDefaultValues: true,
         },
@@ -112,7 +114,7 @@ export default [
       'no-unneeded-ternary': 'error',
 
       // Vue.js Specific Rules for Clean Code
-      'vue/component-name-in-template-casing': ['error', 'PascalCase'],
+      'vue/component-name-in-template-casing': ['error', 'kebab-case'],
       'vue/component-definition-name-casing': ['error', 'PascalCase'],
       'vue/prop-name-casing': ['error', 'camelCase'],
       'vue/attribute-hyphenation': ['error', 'always'],

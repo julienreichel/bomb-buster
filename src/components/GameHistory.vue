@@ -16,17 +16,14 @@
         </q-item-section>
       </q-item>
     </q-list>
-    <div
-      v-if="!showFullHistory && moveHistory.length > movesToShow.length"
-      class="q-mt-xs text-caption text-grey"
-    >
+    <div v-if="!showFullHistory && moveHistory.length > movesToShow.length" class="q-mt-xs text-caption text-grey">
       Showing last {{ movesToShow.length }} of {{ moveHistory.length }} moves
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 
 const props = defineProps({
   moveHistory: {
@@ -61,7 +58,7 @@ function moveSummary(move) {
   } = move
   const src = props.players[sourcePlayerIdx]?.name ?? `P${sourcePlayerIdx}`
   const tgt =
-    targetPlayerIdx != null && props.players[targetPlayerIdx]
+    targetPlayerIdx !== null && props.players[targetPlayerIdx]
       ? props.players[targetPlayerIdx].name
       : null
   let desc = ''
@@ -72,8 +69,8 @@ function moveSummary(move) {
       if (tgt && targetCardId && secondTargetCardId) {
         desc += ` vs ${tgt}'s ${targetCardId} & ${secondTargetCardId}`
       }
-    } else {
-      if (tgt && targetCardId) desc += ` vs ${tgt}'s ${targetCardId}`
+    } else if (tgt && targetCardId) {
+      desc += ` vs ${tgt}'s ${targetCardId}`
     }
     if (result?.outcome) desc += ` → ${result.outcome.replace(/-/g, ' ')}`
     if (result?.infoToken) desc += ' [info token]'

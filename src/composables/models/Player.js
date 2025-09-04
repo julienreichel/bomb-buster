@@ -188,7 +188,7 @@ export class AIPlayer extends Player {
       return gameState.players.every((p) =>
         p.hand.every((card) => {
           const isMyCard = p.id === this.id && valueGroups[num].some((c) => c.id === card.id)
-          const isBlueMismatch = card.number != num && card.isColor('blue')
+          const isBlueMismatch = card.number !== num && card.isColor('blue')
           const isYellowMismatch = !card.isColor('blue') && card.color !== num
           const isRevealed = card.revealed
           // Check if the card is either my card, a blue mismatch, a yellow mismatch,
@@ -319,72 +319,21 @@ export class AIPlayer extends Player {
     let bestDoubleDetectorProb = bestSingleProb
 
     // Group probabilities by player to find best pairs within same player
-    const probabilitiesByPlayer = new Map()
-    singleCardProbabilities.forEach((prob) => {
-      const playerId = prob.info.player.id
-      if (!probabilitiesByPlayer.has(playerId)) {
-        probabilitiesByPlayer.set(playerId, [])
-      }
-      probabilitiesByPlayer.get(playerId).push(prob)
-    })
+    const probabilitiesByPlayer = this._groupProbabilitiesByPlayer(singleCardProbabilities)
 
     // Use existing probability data to find best double detector combinations
     for (const myCard of myCards) {
-      // Count total matching cards across OTHER players' hands for this myCard value
-      const myCardValue = myCard.isColor('blue') ? myCard.number : myCard.color
-      const totalMatchingCards = gameState.players
-        .filter((p) => p.id !== this.id)
-        .reduce((count, player) => {
-          return (
-            count +
-            player.hand.filter((card) => {
-              if (card.revealed) return false
-              const cardValue = card.isColor('blue') ? card.number : card.color
-              return cardValue === myCardValue
-            }).length
-          )
-        }, 0)
+      const totalMatchingCards = this._countMatchingCards(gameState, myCard)
+      const cardPlay = this._findBestDoubleDetectorPlay(
+        myCard,
+        probabilitiesByPlayer,
+        totalMatchingCards,
+        bestDoubleDetectorProb,
+      )
 
-      // Check each player that has at least 2 cards
-      for (const [, playerProbs] of probabilitiesByPlayer) {
-        if (playerProbs.length < 2) continue
-
-        // Check all combinations of 2 cards from this player
-        for (let i = 0; i < playerProbs.length - 1; i++) {
-          for (let j = i + 1; j < playerProbs.length; j++) {
-            const prob1 = playerProbs[i]
-            const prob2 = playerProbs[j]
-
-            // Calculate probability for this specific pair directly
-            const prob1Value = this._getProbFromSlot(myCard, prob1.slots)
-            const prob2Value = this._getProbFromSlot(myCard, prob2.slots)
-            if (prob1Value === 0 || prob2Value === 0) continue
-
-            // Apply joint probability calculation based on number of matching cards
-            let doubleDetectorProb
-            if (totalMatchingCards === 1) {
-              // Simple case: only one matching card, no joint probability needed
-              doubleDetectorProb = Math.min(1.0, prob1Value + prob2Value)
-            } else {
-              // Multiple matching cards: subtract joint probability to avoid double-counting
-              // P(A or B) = P(A) + P(B) - P(A and B)
-              // When events are independent: P(A and B) = P(A) * P(B)
-              doubleDetectorProb = Math.min(1.0, prob1Value + prob2Value - prob1Value * prob2Value)
-            }
-
-            if (doubleDetectorProb > bestDoubleDetectorProb) {
-              bestDoubleDetectorProb = doubleDetectorProb
-              bestDoubleDetectorPlay = {
-                sourcePlayerIdx: this.id,
-                sourceCardId: myCard.id,
-                targetPlayerIdx: prob1.info.player.id,
-                targetCardId: prob1.info.card.id,
-                secondTargetCardId: prob2.info.card.id,
-                doubleDetector: true,
-              }
-            }
-          }
-        }
+      if (cardPlay && cardPlay.probability > bestDoubleDetectorProb) {
+        bestDoubleDetectorProb = cardPlay.probability
+        bestDoubleDetectorPlay = cardPlay.play
       }
     }
 
@@ -400,6 +349,105 @@ export class AIPlayer extends Player {
     }
 
     return null
+  }
+
+  _groupProbabilitiesByPlayer(singleCardProbabilities) {
+    const probabilitiesByPlayer = new Map()
+    singleCardProbabilities.forEach((prob) => {
+      const playerId = prob.info.player.id
+      if (!probabilitiesByPlayer.has(playerId)) {
+        probabilitiesByPlayer.set(playerId, [])
+      }
+      probabilitiesByPlayer.get(playerId).push(prob)
+    })
+    return probabilitiesByPlayer
+  }
+
+  _countMatchingCards(gameState, myCard) {
+    const myCardValue = myCard.isColor('blue') ? myCard.number : myCard.color
+    return gameState.players
+      .filter((p) => p.id !== this.id)
+      .reduce((count, player) => {
+        return (
+          count +
+          player.hand.filter((card) => {
+            if (card.revealed) return false
+            const cardValue = card.isColor('blue') ? card.number : card.color
+            return cardValue === myCardValue
+          }).length
+        )
+      }, 0)
+  }
+
+  _findBestDoubleDetectorPlay(myCard, probabilitiesByPlayer, totalMatchingCards, bestProb) {
+    let bestPlay = null
+    let bestProbability = bestProb
+
+    for (const [, playerProbs] of probabilitiesByPlayer) {
+      if (playerProbs.length < 2) continue
+
+      const playerPlay = this._evaluatePlayerCardPairs(
+        myCard,
+        playerProbs,
+        totalMatchingCards,
+        bestProbability,
+      )
+
+      if (playerPlay && playerPlay.probability > bestProbability) {
+        bestProbability = playerPlay.probability
+        bestPlay = playerPlay.play
+      }
+    }
+
+    return bestPlay ? { play: bestPlay, probability: bestProbability } : null
+  }
+
+  _evaluatePlayerCardPairs(myCard, playerProbs, totalMatchingCards, bestProb) {
+    let bestPlay = null
+    let bestProbability = bestProb
+
+    for (let i = 0; i < playerProbs.length - 1; i++) {
+      for (let j = i + 1; j < playerProbs.length; j++) {
+        const pairResult = this._evaluateCardPair(
+          myCard,
+          playerProbs[i],
+          playerProbs[j],
+          totalMatchingCards,
+        )
+
+        if (pairResult && pairResult.probability > bestProbability) {
+          bestProbability = pairResult.probability
+          bestPlay = pairResult.play
+        }
+      }
+    }
+
+    return bestPlay ? { play: bestPlay, probability: bestProbability } : null
+  }
+
+  _evaluateCardPair(myCard, prob1, prob2, totalMatchingCards) {
+    const prob1Value = this._getProbFromSlot(myCard, prob1.slots)
+    const prob2Value = this._getProbFromSlot(myCard, prob2.slots)
+
+    if (prob1Value === 0 || prob2Value === 0) return null
+
+    // Apply joint probability calculation based on number of matching cards
+    const doubleDetectorProb =
+      totalMatchingCards === 1
+        ? Math.min(1.0, prob1Value + prob2Value)
+        : Math.min(1.0, prob1Value + prob2Value - prob1Value * prob2Value)
+
+    return {
+      probability: doubleDetectorProb,
+      play: {
+        sourcePlayerIdx: this.id,
+        sourceCardId: myCard.id,
+        targetPlayerIdx: prob1.info.player.id,
+        targetCardId: prob1.info.card.id,
+        secondTargetCardId: prob2.info.card.id,
+        doubleDetector: true,
+      },
+    }
   }
 
   _getProbFromSlot(myCard, slots) {

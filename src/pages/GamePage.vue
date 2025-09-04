@@ -15,15 +15,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGameStateManager } from '../composables/managers/GameStateManager.js'
 
-import LoadingState from '../components/LoadingState.vue'
-import GameStatus from '../components/GameStatus.vue'
-import PlayerSelector from '../components/PlayerSelector.vue'
-import PlayArea from '../components/PlayArea.vue'
 import GameHistory from '../components/GameHistory.vue'
+import GameStatus from '../components/GameStatus.vue'
+import LoadingState from '../components/LoadingState.vue'
+import PlayArea from '../components/PlayArea.vue'
+import PlayerSelector from '../components/PlayerSelector.vue'
 
 const { state, createNewGame } = useGameStateManager()
 
@@ -41,7 +41,7 @@ const initialized = computed(
 )
 
 const route = useRoute()
-const numPlayers = computed(() => parseInt(route.query.numPlayers) || 4)
+const numPlayers = computed(() => parseInt(route.query.numPlayers, 10) || 4)
 const hasHuman = computed(() =>
   route.query.hasHuman === undefined
     ? true
@@ -52,10 +52,10 @@ const doubleDetectorEnabled = computed(() =>
     ? true
     : route.query.doubleDetectorEnabled === '1' || route.query.doubleDetectorEnabled === true,
 )
-const yellowCreated = computed(() => parseInt(route.query.yellowCreated) || 0)
-const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard) || 0)
-const redCreated = computed(() => parseInt(route.query.redCreated) || 0)
-const redOnBoard = computed(() => parseInt(route.query.redOnBoard) || 0)
+const yellowCreated = computed(() => parseInt(route.query.yellowCreated, 10) || 0)
+const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard, 10) || 0)
+const redCreated = computed(() => parseInt(route.query.redCreated, 10) || 0)
+const redOnBoard = computed(() => parseInt(route.query.redOnBoard, 10) || 0)
 
 onMounted(() => {
   createNewGame({

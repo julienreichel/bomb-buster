@@ -43,9 +43,9 @@ export default class GameState {
     if (leftIdx === idx || !blueCounts) return leftValue
 
     // Build a pool of available cards (blue and red)
-    let candidates = []
+    const candidates = []
     for (let k = leftValue; k <= 12; ++k) {
-      let max = 4 - (blueCounts[k] || 0)
+      const max = 4 - (blueCounts[k] || 0)
       for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
@@ -87,9 +87,9 @@ export default class GameState {
     if (rightIdx === idx || !blueCounts) return rightValue
 
     // Build a pool of available cards (blue and red)
-    let candidates = []
+    const candidates = []
     for (let k = rightValue; k >= 1; --k) {
-      let max = 4 - (blueCounts[k] || 0)
+      const max = 4 - (blueCounts[k] || 0)
       for (let j = max; j > 0; j--) {
         candidates.push({ num: k })
       }
@@ -256,7 +256,7 @@ export default class GameState {
         randomRed = [...redPool].sort(() => Math.random() - 0.5).slice(0, redCount)
       }
       // shuffle, but give some preference to lower numbers
-      let shuffled = [...pool, ...randomYellow, ...randomRed].sort(
+      const shuffled = [...pool, ...randomYellow, ...randomRed].sort(
         (a, b) => a.number - b.number + Math.random() * 10 - 5,
       )
       if (shuffled.length < numSlots - numEmptySlots) {
@@ -359,7 +359,14 @@ export default class GameState {
       Object.entries(counts).forEach(([val, count]) => {
         total += count
         const digit = (Number(val) * 10) % 10
-        const color = digit === 0 ? 'blue' : digit === 1 ? 'yellow' : 'red'
+        let color
+        if (digit === 0) {
+          color = 'blue'
+        } else if (digit === 1) {
+          color = 'yellow'
+        } else {
+          color = 'red'
+        }
         slots.push({ number: Number(val), count, color })
       })
       slots.sort((a, b) => b.count - a.count)

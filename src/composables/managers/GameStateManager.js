@@ -1,7 +1,7 @@
 // GameStateManager composable
 import { reactive } from 'vue'
 import GameState from '../models/GameState.js'
-import { HumanPlayer, AIPlayer } from '../models/Player.js'
+import { AIPlayer, HumanPlayer } from '../models/Player.js'
 import WireTile from '../models/WireTile.js'
 
 let gameStateInstance
@@ -142,7 +142,7 @@ export function useGameStateManager() {
   function advancePickRound() {
     const players = gameStateInstance.players
     // If currentPicker is null, start with player 0
-    if (gameStateInstance.currentPicker == null) {
+    if (gameStateInstance.currentPicker === null) {
       gameStateInstance.currentPicker = 0
     } else {
       gameStateInstance.currentPicker++
@@ -171,7 +171,7 @@ export function useGameStateManager() {
       return players.every((player) => player.hand.every((card) => card.revealed))
     }
     // If currentPicker is null, start with player 0
-    if (gameStateInstance.currentPicker == null) {
+    if (gameStateInstance.currentPicker === null) {
       gameStateInstance.currentPicker = -1
     }
     while (true) {
@@ -311,7 +311,7 @@ export function useGameStateManager() {
     invalidPick,
   }) {
     const cardColor = sourceCard.color
-    let toReveal = []
+    const toReveal = []
 
     if (sourcePlayerIdx === targetPlayerIdx) {
       // Both cards from same player: check if all matching cards in other players' hands are revealed
@@ -388,7 +388,7 @@ export function useGameStateManager() {
       return result
     }
     const players = gameStateInstance.players
-    if (sourcePlayerIdx == null) return invalidPick()
+    if (sourcePlayerIdx === null || sourcePlayerIdx === undefined) return invalidPick()
     const sourcePlayer = players[sourcePlayerIdx]
     if (!sourcePlayer) return invalidPick()
     const sourceCard = sourcePlayer.hand.find((c) => c.id === sourceCardId)
@@ -407,7 +407,7 @@ export function useGameStateManager() {
       const playerRedCards = sourcePlayer.hand.filter((c) => c.isColor('red'))
       const allRevealed = sourcePlayer.hand.every((c) => c.isColor('red') || c.revealed)
       if (allRevealed) {
-        let toReveal = []
+        const toReveal = []
         for (const card of playerRedCards) {
           if (!card.revealed) {
             revealCardAndRemoveKnown(sourcePlayer, card)
@@ -424,7 +424,8 @@ export function useGameStateManager() {
     }
 
     // Target validation - comes after red card logic
-    if (targetPlayerIdx == null) return invalidPick('incomplete-pick')
+    if (targetPlayerIdx === null || targetPlayerIdx === undefined)
+      return invalidPick('incomplete-pick')
     const targetPlayer = players[targetPlayerIdx]
     if (!targetPlayer) return invalidPick()
     const targetCard = targetPlayer.hand.find((c) => c.id === targetCardId)

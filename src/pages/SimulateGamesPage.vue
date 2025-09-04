@@ -22,22 +22,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useGameStateManager } from '../composables/managers/GameStateManager.js'
 
 const route = useRoute()
-const numPlayers = computed(() => parseInt(route.query.numPlayers) || 4)
+const numPlayers = computed(() => parseInt(route.query.numPlayers, 10) || 4)
 const doubleDetectorEnabled = computed(() =>
   route.query.doubleDetectorEnabled === undefined
     ? true
     : route.query.doubleDetectorEnabled === '1' || route.query.doubleDetectorEnabled === true,
 )
-const yellowCreated = computed(() => parseInt(route.query.yellowCreated) || 0)
-const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard) || 0)
-const redCreated = computed(() => parseInt(route.query.redCreated) || 0)
-const redOnBoard = computed(() => parseInt(route.query.redOnBoard) || 0)
-const numRuns = computed(() => parseInt(route.query.numRuns) || 10)
+const yellowCreated = computed(() => parseInt(route.query.yellowCreated, 10) || 0)
+const yellowOnBoard = computed(() => parseInt(route.query.yellowOnBoard, 10) || 0)
+const redCreated = computed(() => parseInt(route.query.redCreated, 10) || 0)
+const redOnBoard = computed(() => parseInt(route.query.redOnBoard, 10) || 0)
+const numRuns = computed(() => parseInt(route.query.numRuns, 10) || 10)
 const loading = ref(false)
 const stats = ref(null)
 const progress = ref(0)
@@ -70,8 +70,8 @@ const tableRows = computed(() => {
       redOnBoard.value,
       doubleDetectorEnabled.value,
     )
-    let stored = localStorage.getItem(key)
-    let stat = stored ? JSON.parse(stored) : null
+    const stored = localStorage.getItem(key)
+    const stat = stored ? JSON.parse(stored) : null
     const totalRuns = stat?.totalRuns || 0
     const success =
       (stat?.dialCounts?.[5] || 0) +
@@ -127,19 +127,19 @@ function runSimulations() {
       redOnBoard.value,
       doubleDetectorEnabled.value,
     )
-    let stored = localStorage.getItem(key)
-    let stat = stored
+    const stored = localStorage.getItem(key)
+    const stat = stored
       ? JSON.parse(stored)
       : {
-          numPlayers: numPlayers.value,
-          yellowCreated: yellowCreated.value,
-          yellowOnBoard: yellowOnBoard.value,
-          redCreated: redCreated.value,
-          redOnBoard: redOnBoard.value,
-          doubleDetectorEnabled: doubleDetectorEnabled.value,
-          totalRuns: 0,
-          dialCounts: {},
-        }
+        numPlayers: numPlayers.value,
+        yellowCreated: yellowCreated.value,
+        yellowOnBoard: yellowOnBoard.value,
+        redCreated: redCreated.value,
+        redOnBoard: redOnBoard.value,
+        doubleDetectorEnabled: doubleDetectorEnabled.value,
+        totalRuns: 0,
+        dialCounts: {},
+      }
     for (let i = 0; i < numRuns.value; ++i) {
       const manager = useGameStateManager()
       manager.createNewGame({
