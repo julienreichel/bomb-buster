@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { Player, HumanPlayer, AIPlayer } from '../../src/composables/models/Player.js'
+import { describe, expect, it } from 'vitest'
 import GameState from '../../src/composables/models/GameState.js'
+import { AIPlayer, HumanPlayer, Player } from '../../src/composables/models/Player.js'
+import WireTile from '../../src/composables/models/WireTile.js'
 
 describe('Player composable', () => {
   it('should create a Player with default values', () => {
@@ -1029,6 +1030,51 @@ describe('Player composable', () => {
       ]
       const result = ai._checkDoubleDetectorAdvantage(gameState, probabilities, 0.5)
       expect(result).toBeNull()
+    })
+  })
+
+  describe('Double Detector Helper Functions', () => {
+    describe('_groupProbabilitiesByPlayer', () => {
+      it('should group probabilities by player ID', () => {
+        const ai = new AIPlayer({ id: 0, name: 'AI' })
+        const probabilities = [
+          { info: { player: { id: 1 }, card: { id: 'a' } }, slots: [] },
+          { info: { player: { id: 1 }, card: { id: 'b' } }, slots: [] },
+          { info: { player: { id: 2 }, card: { id: 'c' } }, slots: [] },
+        ]
+
+        const result = ai._groupProbabilitiesByPlayer(probabilities)
+
+        expect(result.size).toBe(2)
+        expect(result.get(1)).toHaveLength(2)
+        expect(result.get(2)).toHaveLength(1)
+      })
+    })
+
+    describe('_countMatchingCards', () => {
+      it('should count matching blue cards across other players', () => {
+        const ai = new AIPlayer({ id: 0, name: 'AI' })
+        const myCard = new WireTile({ color: 'blue', number: 5 })
+        const gameState = {
+          players: [
+            { id: 0, hand: [myCard] },
+            {
+              id: 1,
+              hand: [
+                new WireTile({ color: 'blue', number: 5 }),
+                new WireTile({ color: 'blue', number: 3 }),
+              ],
+            },
+            {
+              id: 2,
+              hand: [new WireTile({ color: 'blue', number: 5 })],
+            },
+          ],
+        }
+
+        const result = ai._countMatchingCards(gameState, myCard)
+        expect(result).toBe(2)
+      })
     })
   })
 })

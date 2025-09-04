@@ -27,7 +27,7 @@ export default class GameState {
   // --- Wire deduction helpers ---
 
   // Helper: get the nearest known wire number to the left of idx, or the lowest possible value given remaining cards
-  static nearestKnownLeft(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
+  static nearestKnownLeft({ player, idx, blueCounts = null, yellowWires = null, redWires = null }) {
     // Find the nearest revealed/infoToken card to the left
     let leftIdx = -1
     let leftValue = 1
@@ -70,7 +70,13 @@ export default class GameState {
   }
 
   // Helper: get the nearest known wire number to the right of idx, or the highest possible value given remaining cards
-  static nearestKnownRight(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
+  static nearestKnownRight({
+    player,
+    idx,
+    blueCounts = null,
+    yellowWires = null,
+    redWires = null,
+  }) {
     // Find the nearest revealed/infoToken card to the right
     let rightIdx = player.hand.length
     let rightValue = 12
@@ -113,9 +119,9 @@ export default class GameState {
   }
 
   // INTERVAL_FOR_SLOT: returns [L_rank, U_rank] for a slot, optionally with deduction info
-  static intervalForSlot(player, idx, blueCounts = null, yellowWires = null, redWires = null) {
-    const L = GameState.nearestKnownLeft(player, idx, blueCounts, yellowWires, redWires)
-    const U = GameState.nearestKnownRight(player, idx, blueCounts, yellowWires, redWires)
+  static intervalForSlot({ player, idx, blueCounts = null, yellowWires = null, redWires = null }) {
+    const L = GameState.nearestKnownLeft({ player, idx, blueCounts, yellowWires, redWires })
+    const U = GameState.nearestKnownRight({ player, idx, blueCounts, yellowWires, redWires })
     return [L, U]
   }
 
@@ -153,13 +159,13 @@ export default class GameState {
     const redMax = allCardsInHands.filter((c) => c.color === 'red').length
 
     // Use deduction-aware interval
-    const [L, U] = GameState.intervalForSlot(
+    const [L, U] = GameState.intervalForSlot({
       player,
       idx,
       blueCounts,
-      yellowCount < yellowMax ? this.yellowWires : null,
-      redCount < redMax ? this.redWires : null,
-    )
+      yellowWires: yellowCount < yellowMax ? this.yellowWires : null,
+      redWires: redCount < redMax ? this.redWires : null,
+    })
     const S = new Set()
 
     // For blue, check if not present in play

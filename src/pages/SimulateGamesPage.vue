@@ -62,14 +62,14 @@ const tableRows = computed(() => {
   // For each player count 3, 4, 5, try to get stats from localStorage
   const rows = []
   for (let p = 3; p <= 5; ++p) {
-    const key = getStatsKey(
-      p,
-      yellowCreated.value,
-      yellowOnBoard.value,
-      redCreated.value,
-      redOnBoard.value,
-      doubleDetectorEnabled.value,
-    )
+    const key = getStatsKey({
+      players: p,
+      yellowCreated: yellowCreated.value,
+      yellowOnBoard: yellowOnBoard.value,
+      redCreated: redCreated.value,
+      redOnBoard: redOnBoard.value,
+      doubleDetectorEnabled: doubleDetectorEnabled.value,
+    })
     const stored = localStorage.getItem(key)
     const stat = stored ? JSON.parse(stored) : null
     const totalRuns = stat?.totalRuns || 0
@@ -98,8 +98,8 @@ const tableRows = computed(() => {
   return rows
 })
 
-function getStatsKey(p, yc, yob, rc, rob, dd) {
-  return `sim-stats-p${p}-yc${yc}-yob${yob}-rc${rc}-rob${rob}-dd${dd ? 1 : 0}`
+function getStatsKey({ players, yellowCreated, yellowOnBoard, redCreated, redOnBoard, doubleDetectorEnabled }) {
+  return `sim-stats-p${players}-yc${yellowCreated}-yob${yellowOnBoard}-rc${redCreated}-rob${redOnBoard}-dd${doubleDetectorEnabled ? 1 : 0}`
 }
 
 function runSimulations() {
@@ -119,14 +119,14 @@ function runSimulations() {
   loading.value = true
   progress.value = 0
   setTimeout(async () => {
-    const key = getStatsKey(
-      numPlayers.value,
-      yellowCreated.value,
-      yellowOnBoard.value,
-      redCreated.value,
-      redOnBoard.value,
-      doubleDetectorEnabled.value,
-    )
+    const key = getStatsKey({
+      players: numPlayers.value,
+      yellowCreated: yellowCreated.value,
+      yellowOnBoard: yellowOnBoard.value,
+      redCreated: redCreated.value,
+      redOnBoard: redOnBoard.value,
+      doubleDetectorEnabled: doubleDetectorEnabled.value,
+    })
     const stored = localStorage.getItem(key)
     const stat = stored
       ? JSON.parse(stored)

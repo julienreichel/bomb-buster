@@ -277,7 +277,7 @@ On your turn, choose one of these 3 actions:
 
 ### Testing Dependencies (To Add)
 
-- Vitest or Jest: Testing framework
+- Vitest: Testing framework
 - Vue Test Utils: Vue component testing
 - @testing-library/vue: Testing utilities
 

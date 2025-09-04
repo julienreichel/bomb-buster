@@ -144,5 +144,16 @@ export default [
     },
   },
 
+  // Test files configuration - more lenient rules for readability
+  {
+    files: ['tests/**/*.spec.js', 'tests/**/*.test.js'],
+    rules: {
+      'max-lines': ['warn', { max: 2000, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 1200, skipBlankLines: true, skipComments: true }],
+      'no-magic-numbers': 'off', // Test data often uses specific values
+      complexity: 'off', // Test logic can be complex
+    },
+  },
+
   prettierSkipFormatting,
 ]

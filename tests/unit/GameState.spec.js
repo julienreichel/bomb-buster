@@ -15,20 +15,20 @@ describe('GameState composable', () => {
         ],
       }
       // idx 0: no known left, should return 1
-      expect(GameState.nearestKnownLeft(player, 0)).toBe(1)
+      expect(GameState.nearestKnownLeft({ player, idx: 0 })).toBe(1)
       // idx 2: current is known
-      expect(GameState.nearestKnownLeft(player, 2)).toBe(4)
+      expect(GameState.nearestKnownLeft({ player, idx: 2 })).toBe(4)
       // idx 3: left is idx 2 (revealed: 4)
-      expect(GameState.nearestKnownLeft(player, 3)).toBe(4)
+      expect(GameState.nearestKnownLeft({ player, idx: 3 })).toBe(4)
       // idx 5: left is idx 4 (infoToken: 6)
-      expect(GameState.nearestKnownLeft(player, 5)).toBe(6)
+      expect(GameState.nearestKnownLeft({ player, idx: 5 })).toBe(6)
 
       // idx 0: right is idx 1 (not known), idx 2 (revealed: 4)
-      expect(GameState.nearestKnownRight(player, 0)).toBe(4)
+      expect(GameState.nearestKnownRight({ player, idx: 0 })).toBe(4)
       // idx 2: current is known
-      expect(GameState.nearestKnownRight(player, 2)).toBe(4)
+      expect(GameState.nearestKnownRight({ player, idx: 2 })).toBe(4)
       // idx 5: no right, should return 12
-      expect(GameState.nearestKnownRight(player, 5)).toBe(12)
+      expect(GameState.nearestKnownRight({ player, idx: 5 })).toBe(12)
     })
 
     it('nearestKnownLeft uses the info of blueCounts', () => {
@@ -43,9 +43,9 @@ describe('GameState composable', () => {
         1: 4,
         2: 3,
       }
-      expect(GameState.nearestKnownLeft(player, 0, blueCount)).toBe(2)
-      expect(GameState.nearestKnownLeft(player, 1, blueCount)).toBe(3)
-      expect(GameState.nearestKnownLeft(player, 2, blueCount)).toBe(4)
+      expect(GameState.nearestKnownLeft({ player, idx: 0, blueCounts: blueCount })).toBe(2)
+      expect(GameState.nearestKnownLeft({ player, idx: 1, blueCounts: blueCount })).toBe(3)
+      expect(GameState.nearestKnownLeft({ player, idx: 2, blueCounts: blueCount })).toBe(4)
     })
 
     it('nearestKnownLeft uses the info of blueCounts in the middle also', () => {
@@ -61,9 +61,9 @@ describe('GameState composable', () => {
         2: 4,
         3: 3,
       }
-      expect(GameState.nearestKnownLeft(player, 0, blueCount)).toBe(2)
-      expect(GameState.nearestKnownLeft(player, 1, blueCount)).toBe(3)
-      expect(GameState.nearestKnownLeft(player, 2, blueCount)).toBe(4)
+      expect(GameState.nearestKnownLeft({ player, idx: 0, blueCounts: blueCount })).toBe(2)
+      expect(GameState.nearestKnownLeft({ player, idx: 1, blueCounts: blueCount })).toBe(3)
+      expect(GameState.nearestKnownLeft({ player, idx: 2, blueCounts: blueCount })).toBe(4)
     })
 
     it('nearestKnownRight uses the info of blueCounts', () => {
@@ -78,9 +78,9 @@ describe('GameState composable', () => {
         12: 4,
         11: 3,
       }
-      expect(GameState.nearestKnownRight(player, 0, blueCount)).toBe(9)
-      expect(GameState.nearestKnownRight(player, 1, blueCount)).toBe(10)
-      expect(GameState.nearestKnownRight(player, 2, blueCount)).toBe(11)
+      expect(GameState.nearestKnownRight({ player, idx: 0, blueCounts: blueCount })).toBe(9)
+      expect(GameState.nearestKnownRight({ player, idx: 1, blueCounts: blueCount })).toBe(10)
+      expect(GameState.nearestKnownRight({ player, idx: 2, blueCounts: blueCount })).toBe(11)
     })
   })
   describe('candidatesForSlot', () => {
