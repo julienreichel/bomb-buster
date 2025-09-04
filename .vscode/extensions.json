@@ -1,10 +1,46 @@
 {
   "recommendations": [
+    // Essential Vue.js development
+    "Vue.volar",
+    "Vue.vscode-typescript-vue-plugin",
+
+    // Code Quality & Formatting (existing)
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "editorconfig.editorconfig",
-    "vue.volar",
-    "wayou.vscode-todo-highlight"
+
+    // Testing & Coverage
+    "ryanluker.vscode-coverage-gutters",
+    "ms-vscode.vscode-json",
+
+    // Git & Version Control
+    "eamodio.gitlens",
+    "mhutchie.git-graph",
+    "vivaxy.vscode-conventional-commits",
+
+    // Code Intelligence
+    "GitHub.copilot",
+    "GitHub.copilot-chat",
+    "ms-vscode.vscode-typescript-next",
+
+    // Productivity (existing)
+    "wayou.vscode-todo-highlight",
+    "aaron-bond.better-comments",
+    "usernamehw.errorlens",
+    "christian-kohler.path-intellisense",
+    "formulahendry.auto-rename-tag",
+
+    // Documentation
+    "shd101wyy.markdown-preview-enhanced",
+    "yzhang.markdown-all-in-one",
+
+    // Debug & Development
+    "ms-vscode.vscode-js-debug",
+    "Gruntfuggly.todo-tree",
+
+    // Icons & Themes (optional but helpful)
+    "vscode-icons-team.vscode-icons",
+    "PKief.material-icon-theme"
   ],
   "unwantedRecommendations": [
     "octref.vetur",

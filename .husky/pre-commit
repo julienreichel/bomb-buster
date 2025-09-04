@@ -1,0 +1,31 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run quality checks before commit
+echo "🔍 Running pre-commit quality checks..."
+
+# Check formatting
+echo "📝 Checking code formatting..."
+npm run format:check
+if [ $? -ne 0 ]; then
+  echo "❌ Code formatting check failed. Run 'npm run format' to fix."
+  exit 1
+fi
+
+# Run linting
+echo "🔧 Running ESLint..."
+npm run lint
+if [ $? -ne 0 ]; then
+  echo "❌ Linting failed. Run 'npm run lint:fix' to fix auto-fixable issues."
+  exit 1
+fi
+
+# Run tests with coverage
+echo "🧪 Running tests with coverage..."
+npm run test:coverage
+if [ $? -ne 0 ]; then
+  echo "❌ Tests failed or coverage below threshold."
+  exit 1
+fi
+
+echo "✅ All quality checks passed!"

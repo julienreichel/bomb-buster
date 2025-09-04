@@ -1,8 +1,119 @@
 {
+  // Existing settings
   "editor.bracketPairColorization.enabled": true,
   "editor.guides.bracketPairs": true,
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
-  "editor.codeActionsOnSave": ["source.fixAll.eslint"],
-  "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"]
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "explicit",
+    "source.removeUnusedImports": "explicit"
+  },
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "vue"],
+
+  // Clean Code & Quality settings
+  "editor.formatOnPaste": true,
+  "editor.rulers": [80, 120],
+  "editor.wordWrap": "wordWrapColumn",
+  "editor.wordWrapColumn": 120,
+  "editor.tabSize": 2,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
+
+  // File associations
+  "files.associations": {
+    "*.vue": "vue"
+  },
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/coverage": true,
+    "**/.quasar": true
+  },
+
+  // Language-specific settings
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.maxTokenizationLineLength": 2500
+  },
+  "[vue]": {
+    "editor.defaultFormatter": "Vue.volar"
+  },
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.wordWrap": "on"
+  },
+
+  // ESLint settings
+  "eslint.workingDirectories": ["."],
+
+  // Test coverage
+  "coverage-gutters.coverageFileNames": [
+    "lcov.info",
+    "cov.xml",
+    "coverage.xml",
+    "jacoco.xml",
+    "coverage-final.json"
+  ],
+  "coverage-gutters.showLineCoverage": true,
+  "coverage-gutters.showRulerCoverage": true,
+
+  // Git settings for Conventional Commits
+  "git.enableSmartCommit": false,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+  "git.inputValidation": true,
+  "git.inputValidationLength": 72,
+  "git.inputValidationSubjectLength": 50,
+
+  // Search settings
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/coverage": true,
+    "**/dist": true,
+    "**/.quasar": true
+  },
+
+  // Copilot settings for better code generation
+  "github.copilot.enable": {
+    "*": true,
+    "yaml": false,
+    "plaintext": false
+  },
+  "github.copilot.editor.enableAutoCompletions": true,
+
+  // Vue specific settings
+  "vetur.validation.template": false,
+  "vetur.validation.script": false,
+  "vetur.validation.style": false,
+
+  // Emmet for Vue
+  "emmet.includeLanguages": {
+    "vue-html": "html",
+    "vue": "html"
+  },
+
+  // Problems panel
+  "problems.decorations.enabled": true,
+  "problems.showCurrentInStatus": true,
+
+  // Terminal
+  "terminal.integrated.defaultProfile.osx": "zsh",
+
+  // Auto-save for better workflow
+  "files.autoSave": "onFocusChange",
+
+  // Breadcrumbs for navigation
+  "breadcrumbs.enabled": true,
+  "breadcrumbs.showFunctions": true,
+  "breadcrumbs.showClasses": true,
+
+  // IntelliSense settings
+  "typescript.suggest.autoImports": true,
+  "javascript.suggest.autoImports": true,
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "javascript.updateImportsOnFileMove.enabled": "always"
 }

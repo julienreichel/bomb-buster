@@ -1,8 +1,8 @@
 import js from '@eslint/js'
-import globals from 'globals'
-import pluginVue from 'eslint-plugin-vue'
 import pluginQuasar from '@quasar/app-vite/eslint'
 import prettierSkipFormatting from '@vue/eslint-config-prettier/skip-formatting'
+import pluginVue from 'eslint-plugin-vue'
+import globals from 'globals'
 
 export default [
   {
@@ -51,12 +51,85 @@ export default [
       },
     },
 
-    // add your custom rules here
+    // Clean Code and SOLID Principles Rules
     rules: {
       'prefer-promise-reject-errors': 'off',
 
       // allow debugger during development only
       'no-debugger': process.env.NODE_ENV === 'production' ? 'error' : 'off',
+
+      // Clean Code Principles
+      'max-lines': ['warn', { max: 200, skipBlankLines: true, skipComments: true }],
+      'max-lines-per-function': ['warn', { max: 50, skipBlankLines: true, skipComments: true }],
+      'max-params': ['error', 4],
+      'max-depth': ['error', 4],
+      complexity: ['warn', 10],
+
+      // Code Quality
+      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-unused-vars': [
+        'error',
+        {
+          argsIgnorePattern: '^_',
+          varsIgnorePattern: '^_',
+        },
+      ],
+      'no-var': 'error',
+      'prefer-const': 'error',
+      'prefer-arrow-callback': 'error',
+      'arrow-spacing': 'error',
+
+      // Prevent Bugs
+      'no-duplicate-imports': 'error',
+      'no-template-curly-in-string': 'error',
+      'no-unreachable': 'error',
+      'no-unsafe-finally': 'error',
+      'no-unsafe-optional-chaining': 'error',
+
+      // Best Practices
+      eqeqeq: ['error', 'always'],
+      'no-eval': 'error',
+      'no-implied-eval': 'error',
+      'no-magic-numbers': [
+        'warn',
+        {
+          ignore: [-1, 0, 1, 2, 3, 4, 5, 10, 50, 100, 200],
+          ignoreArrayIndexes: true,
+          ignoreDefaultValues: true,
+        },
+      ],
+      'prefer-template': 'error',
+      radix: 'error',
+
+      // Naming Conventions
+      camelcase: ['error', { properties: 'always' }],
+
+      // Function Design
+      'consistent-return': 'error',
+      'no-else-return': 'error',
+      'no-lonely-if': 'error',
+      'no-nested-ternary': 'error',
+      'no-unneeded-ternary': 'error',
+
+      // Vue.js Specific Rules for Clean Code
+      'vue/component-name-in-template-casing': ['error', 'PascalCase'],
+      'vue/component-definition-name-casing': ['error', 'PascalCase'],
+      'vue/prop-name-casing': ['error', 'camelCase'],
+      'vue/attribute-hyphenation': ['error', 'always'],
+      'vue/v-on-event-hyphenation': ['error', 'always'],
+      'vue/max-attributes-per-line': ['error', { singleline: 3, multiline: 1 }],
+      'vue/multi-word-component-names': 'error',
+      'vue/no-unused-components': 'error',
+      'vue/no-unused-vars': 'error',
+      'vue/require-default-prop': 'error',
+      'vue/require-prop-types': 'error',
+      'vue/prefer-import-from-vue': 'error',
+
+      // Prevent Common Anti-patterns
+      'vue/no-mutating-props': 'error',
+      'vue/no-v-html': 'warn',
+      'vue/no-dupe-keys': 'error',
+      'vue/no-duplicate-attributes': 'error',
     },
   },
 
