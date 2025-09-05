@@ -2,8 +2,12 @@
   <div class="row q-gutter-md items-start">
     <!-- Selected Player Section -->
     <div>
-      <player-deck :player="selectedPlayerWithSelection" visible :selectable="isHumanTurn"
-        @pick="handlePlayerDeckPick" />
+      <player-deck
+        :player="selectedPlayerWithSelection"
+        visible
+        :selectable="isHumanTurn"
+        @pick="handlePlayerDeckPick"
+      />
 
       <div v-if="isHumanTurn && playMessage" class="q-mb-md text-primary text-h6">
         {{ playMessage }}
@@ -12,8 +16,14 @@
       <!-- Special Card Section -->
       <!-- Double Detector Section -->
       <div v-if="isHumanTurn && isPlayPhase && selectedPlayer.hasDoubleDetector" class="q-mb-md">
-        <q-btn @click="toggleDoubleDetector" :color="doubleDetector ? 'orange' : 'grey'" :outline="!doubleDetector"
-          icon="leak_add" :label="doubleDetectorButtonLabel" size="sm">
+        <q-btn
+          @click="toggleDoubleDetector"
+          :color="doubleDetector ? 'orange' : 'grey'"
+          :outline="!doubleDetector"
+          icon="leak_add"
+          :label="doubleDetectorButtonLabel"
+          size="sm"
+        >
           <q-tooltip class="text-body2" max-width="300px">
             Use your double detector to select two target cards instead of one. Works with blue
             cards (matching numbers) or yellow cards (any yellow). You can only use this once per
@@ -30,10 +40,16 @@
         <q-toggle v-model="showCandidates" label="Show Candidates" color="primary" dense />
       </div>
       <div class="row q-gutter-md">
-        <player-deck v-for="(player, idx) in otherPlayersWithSelection" :key="player.id" :player="player"
-          :size="'small'" :visible="false" :selectable="isPlayPhase && isHumanTurn && hasSourceCard"
+        <player-deck
+          v-for="(player, idx) in otherPlayersWithSelection"
+          :key="player.id"
+          :player="player"
+          :size="'small'"
+          :visible="false"
+          :selectable="isPlayPhase && isHumanTurn && hasSourceCard"
           :candidates="showCandidates ? allCandidates[idx] : undefined"
-          @pick="(card) => handleOtherPlayerPick(card, player.id)" />
+          @pick="(card) => handleOtherPlayerPick(card, player.id)"
+        />
       </div>
     </div>
   </div>

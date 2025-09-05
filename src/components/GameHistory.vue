@@ -16,7 +16,10 @@
         </q-item-section>
       </q-item>
     </q-list>
-    <div v-if="!showFullHistory && moveHistory.length > movesToShow.length" class="q-mt-xs text-caption text-grey">
+    <div
+      v-if="!showFullHistory && moveHistory.length > movesToShow.length"
+      class="q-mt-xs text-caption text-grey"
+    >
       Showing last {{ movesToShow.length }} of {{ moveHistory.length }} moves
     </div>
   </div>
@@ -76,31 +79,32 @@ function formatPlayAction(move, sourcePlayerName, targetPlayerName) {
   const { sourceCardId, doubleDetector, targetCardId, secondTargetCardId, result } = move
 
   let desc = `${sourcePlayerName} played ${sourceCardId}`
-  
+
   if (doubleDetector) {
     desc += ' [DOUBLE DETECTOR]'
     desc += formatDoubleDetectorTargets(targetPlayerName, targetCardId, secondTargetCardId)
   } else {
     desc += formatSingleTarget(targetPlayerName, targetCardId)
   }
-  
+
   desc += formatPlayResult(result)
   return desc
 }
 
 function moveSummary(move) {
   if (!move) return ''
-  
+
   const { type, sourcePlayerIdx, targetPlayerIdx } = move
   const sourcePlayerName = getPlayerName(sourcePlayerIdx)
-  const targetPlayerName = targetPlayerIdx !== null && props.players[targetPlayerIdx]
-    ? props.players[targetPlayerIdx].name
-    : null
-  
+  const targetPlayerName =
+    targetPlayerIdx !== null && props.players[targetPlayerIdx]
+      ? props.players[targetPlayerIdx].name
+      : null
+
   if (type === 'play') {
     return formatPlayAction(move, sourcePlayerName, targetPlayerName)
   }
-  
+
   return `${sourcePlayerName} action`
 }
 </script>

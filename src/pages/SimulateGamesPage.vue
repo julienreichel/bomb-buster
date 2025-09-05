@@ -98,7 +98,14 @@ const tableRows = computed(() => {
   return rows
 })
 
-function getStatsKey({ players, yellowCreated, yellowOnBoard, redCreated, redOnBoard, doubleDetectorEnabled }) {
+function getStatsKey({
+  players,
+  yellowCreated,
+  yellowOnBoard,
+  redCreated,
+  redOnBoard,
+  doubleDetectorEnabled,
+}) {
   return `sim-stats-p${players}-yc${yellowCreated}-yob${yellowOnBoard}-rc${redCreated}-rob${redOnBoard}-dd${doubleDetectorEnabled ? 1 : 0}`
 }
 
@@ -131,15 +138,15 @@ function runSimulations() {
     const stat = stored
       ? JSON.parse(stored)
       : {
-        numPlayers: numPlayers.value,
-        yellowCreated: yellowCreated.value,
-        yellowOnBoard: yellowOnBoard.value,
-        redCreated: redCreated.value,
-        redOnBoard: redOnBoard.value,
-        doubleDetectorEnabled: doubleDetectorEnabled.value,
-        totalRuns: 0,
-        dialCounts: {},
-      }
+          numPlayers: numPlayers.value,
+          yellowCreated: yellowCreated.value,
+          yellowOnBoard: yellowOnBoard.value,
+          redCreated: redCreated.value,
+          redOnBoard: redOnBoard.value,
+          doubleDetectorEnabled: doubleDetectorEnabled.value,
+          totalRuns: 0,
+          dialCounts: {},
+        }
     for (let i = 0; i < numRuns.value; ++i) {
       const manager = useGameStateManager()
       manager.createNewGame({

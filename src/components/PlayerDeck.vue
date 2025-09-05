@@ -3,23 +3,44 @@
     <q-card-section>
       <div class="text-h6 row items-center q-gutter-sm">
         <span>{{ player && player.name ? player.name : 'Player' }}'s Hand</span>
-        <q-chip v-if="player.isAI && player.hasDoubleDetector" icon="search" color="primary" text-color="white"
-          size="sm" dense>
+        <q-chip
+          v-if="player.isAI && player.hasDoubleDetector"
+          icon="search"
+          color="primary"
+          text-color="white"
+          size="sm"
+          dense
+        >
           Double Detector
         </q-chip>
-        <q-chip v-if="player.isAI && !player.hasDoubleDetector" icon="search_off" color="grey" text-color="white"
-          size="sm" dense>
+        <q-chip
+          v-if="player.isAI && !player.hasDoubleDetector"
+          icon="search_off"
+          color="grey"
+          text-color="white"
+          size="sm"
+          dense
+        >
           No Double Detector
         </q-chip>
       </div>
       <div class="row q-gutter-sm">
-        <wire-card v-for="(card, idx) in player.hand" :key="card.id" :card="card" :visible="visible" :size="size"
-          :selectable="selectable" :candidates="candidates ? candidates[idx] : undefined" @pick="$emit('pick', card)" />
+        <wire-card
+          v-for="(card, idx) in player.hand"
+          :key="card.id"
+          :card="card"
+          :visible="visible"
+          :size="size"
+          :selectable="selectable"
+          :candidates="candidates ? candidates[idx] : undefined"
+          @pick="$emit('pick', card)"
+        />
       </div>
       <div v-if="knownWiresToShow.length" class="q-mt-sm text-caption text-grey-7">
         Known wires:
         <span v-for="(wire, i) in knownWiresToShow" :key="wire.id || wire">
-          <span>{{ formatWire(wire) }}</span><span v-if="i < knownWiresToShow.length - 1">, </span>
+          <span>{{ formatWire(wire) }}</span
+          ><span v-if="i < knownWiresToShow.length - 1">, </span>
         </span>
       </div>
     </q-card-section>

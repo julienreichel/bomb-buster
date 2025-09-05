@@ -1,5 +1,11 @@
 <template>
-  <q-card :class="cardClass" :style="cardStyle" @click="onClick" :clickable="selectable" :bordered="!!card.selected">
+  <q-card
+    :class="cardClass"
+    :style="cardStyle"
+    @click="onClick"
+    :clickable="selectable"
+    :bordered="!!card.selected"
+  >
     <q-card-section class="text-center">
       <template v-if="card.infoToken">
         <q-badge color="info">
@@ -64,10 +70,7 @@ const cardClass = computed(() => {
       colorClass = 'bg-grey-2'
     }
 
-    base = [
-      'text-white',
-      colorClass,
-    ]
+    base = ['text-white', colorClass]
     if (!props.card.revealed) {
       base.push('light-dimmed')
     }
