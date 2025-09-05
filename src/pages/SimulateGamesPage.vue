@@ -84,7 +84,7 @@ function calculateSuccessCount(stat) {
 function calculateSuccessRate(stat) {
   const totalRuns = stat?.totalRuns || 0
   if (totalRuns === 0) return '0.0'
-  
+
   const success = calculateSuccessCount(stat)
   return ((success / totalRuns) * 100).toFixed(1)
 }

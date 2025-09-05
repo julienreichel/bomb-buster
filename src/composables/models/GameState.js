@@ -137,14 +137,14 @@ export default class GameState {
     const blueCounts = Array(13).fill(0) // 1..12
     let yellowCount = 0
     let redCount = 0
-    
+
     for (const c of allCardsInHands) {
       const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
       if (c.color === 'blue' && isVisible) blueCounts[c.number]++
       if (c.color === 'yellow' && isVisible) yellowCount++
       if (c.color === 'red' && isVisible) redCount++
     }
-    
+
     return { blueCounts, yellowCount, redCount }
   }
 
@@ -199,7 +199,10 @@ export default class GameState {
     const allCardsInHands = this.players.flatMap((p) => p.hand)
 
     // Count visible cards by color
-    const { blueCounts, yellowCount, redCount } = this._countVisibleCards(allCardsInHands, currentPlayerCardIds)
+    const { blueCounts, yellowCount, redCount } = this._countVisibleCards(
+      allCardsInHands,
+      currentPlayerCardIds,
+    )
 
     const yellowMax = allCardsInHands.filter((c) => c.color === 'yellow').length
     const redMax = allCardsInHands.filter((c) => c.color === 'red').length
@@ -212,33 +215,203 @@ export default class GameState {
       yellowWires: yellowCount < yellowMax ? this.yellowWires : null,
       redWires: redCount < redMax ? this.redWires : null,
     })
-    
+
     const candidates = new Set()
 
     // Add blue candidates
     this._addBlueCandidates(candidates, blueCounts, L, U)
-    
+
     // Add yellow candidates if any left
     if (yellowCount < yellowMax) {
       this._addColoredWireCandidates(candidates, {
         wires: this.yellowWires,
         currentPlayerCardIds,
         L,
-        U
+        U,
       })
     }
-    
+
     // Add red candidates if any left
     if (redCount < redMax) {
       this._addColoredWireCandidates(candidates, {
         wires: this.redWires,
         currentPlayerCardIds,
         L,
-        U
+        U,
       })
     }
 
     return candidates
+  }
+
+  /**
+   * Helper method to build card pools for Monte Carlo simulation
+   * @param {Set|null} currentPlayerCardIds - Card IDs to consider as visible
+   * @returns {Object} Object containing pool arrays and counts
+   */
+  _buildCardPools(currentPlayerCardIds) {
+    const allCardsInHands = this.players.flatMap((p) => p.hand)
+    let yellowCount = 0
+    let redCount = 0
+    const pool = []
+
+    for (const c of allCardsInHands) {
+      const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
+      if (c.color === 'blue' && !isVisible) pool.push(c)
+      if (c.color === 'yellow' && !isVisible) yellowCount++
+      if (c.color === 'red' && !isVisible) redCount++
+    }
+
+    const yellowPool = this.yellowWires.filter(
+      (y) => !y.revealed && !y.infoToken && !currentPlayerCardIds?.has(y.id),
+    )
+
+    const redPool = this.redWires.filter(
+      (r) => !r.revealed && !r.infoToken && !currentPlayerCardIds?.has(r.id),
+    )
+
+    pool.sort((a, b) => a.number - b.number)
+
+    return { pool, yellowPool, redPool, yellowCount, redCount }
+  }
+
+  /**
+   * Helper method to create shuffled deck for one simulation
+   * @param {Object} pools - Card pools from _buildCardPools
+   * @returns {Array} Shuffled array of cards
+   */
+  _createShuffledDeck({ pool, yellowPool, redPool, yellowCount, redCount }) {
+    let randomYellow = []
+    let randomRed = []
+
+    if (yellowCount) {
+      randomYellow = [...yellowPool].sort(() => Math.random() - 0.5).slice(0, yellowCount)
+    }
+    if (redCount) {
+      randomRed = [...redPool].sort(() => Math.random() - 0.5).slice(0, redCount)
+    }
+
+    return [...pool, ...randomYellow, ...randomRed].sort(
+      (a, b) => a.number - b.number + Math.random() * 10 - 5,
+    )
+  }
+
+  /**
+   * Helper method to assign known cards to valid slots
+   * @param {Array} slotSets - Slot sets with candidates
+   * @param {Array} assignment - Assignment array to modify
+   * @param {Array} shuffled - Shuffled deck to modify
+   */
+  _assignKnownCards(slotSets, assignment, shuffled) {
+    const playerSlotIndices = {}
+
+    // Group slots by player
+    for (let s = 0; s < slotSets.length; ++s) {
+      const pid = slotSets[s].player.id
+      if (!slotSets[s].player.knownWires) continue
+      if (!playerSlotIndices[pid]) playerSlotIndices[pid] = []
+      playerSlotIndices[pid].push(s)
+    }
+
+    // Assign known cards for each player
+    Object.values(playerSlotIndices).forEach((slots) => {
+      const knownWires = [...(slotSets[slots[0]].player.knownWires || [])]
+      knownWires.forEach((knownCard) => {
+        if (knownCard.color === 'yellow') return // Not supported yet
+
+        const validSlots = slots.filter(
+          (s) => !assignment[s] && slotSets[s].candidates.has(knownCard.number),
+        )
+
+        if (validSlots.length) {
+          const pickIdx = validSlots[Math.floor(Math.random() * validSlots.length)]
+          assignment[pickIdx] = knownCard.number
+          const removeIdx = shuffled.findIndex((c) => c.number === knownCard.number)
+          if (removeIdx !== -1) shuffled.splice(removeIdx, 1)
+        }
+      })
+    })
+  }
+
+  /**
+   * Helper method to assign cards to remaining slots
+   * @param {Array} slotSets - Slot sets with candidates
+   * @param {Array} assignment - Assignment array to modify
+   * @param {Array} shuffled - Shuffled deck to modify
+   * @returns {boolean} Whether assignment was successful
+   */
+  _assignRemainingSlots(slotSets, assignment, shuffled) {
+    let minVal = 1
+    let currentPlayerId = null
+
+    for (let s = 0; s < slotSets.length; ++s) {
+      if (slotSets[s].candidates.size === 0 || assignment[s]) continue
+
+      if (slotSets[s].player.id !== currentPlayerId) {
+        currentPlayerId = slotSets[s].player.id
+        minVal = 1
+      }
+
+      let foundIdx = -1
+      for (let k = 0; k < shuffled.length; ++k) {
+        const number = shuffled[k].number
+        if (number >= minVal && slotSets[s].candidates.has(number)) {
+          foundIdx = k
+          minVal = number
+          break
+        }
+      }
+
+      if (foundIdx === -1) return false
+
+      assignment[s] = shuffled[foundIdx].number
+      shuffled.splice(foundIdx, 1)
+    }
+
+    return true
+  }
+
+  /**
+   * Helper method to determine wire color from number
+   * @param {number} number - Wire number
+   * @returns {string} Color (blue, yellow, or red)
+   */
+  _getWireColor(number) {
+    const digit = (number * 10) % 10
+    if (digit === 0) return 'blue'
+    if (digit === 1) return 'yellow'
+    return 'red'
+  }
+
+  /**
+   * Helper method to compute final probabilities from counts
+   * @param {Array} slotNumberCounts - Count arrays for each slot
+   * @param {Array} slotSets - Original slot sets
+   * @returns {Array} Probability results
+   */
+  _computeProbabilities(slotNumberCounts, slotSets) {
+    return slotNumberCounts.map((counts, idx) => {
+      let total = 0
+      const slots = []
+
+      Object.entries(counts).forEach(([val, count]) => {
+        total += count
+        const number = Number(val)
+        const color = this._getWireColor(number)
+        slots.push({ number, count, color })
+      })
+
+      slots.sort((a, b) => b.count - a.count)
+
+      return {
+        slots: slots.map((s) => ({
+          number: s.number,
+          color: s.color,
+          probability: total > 0 ? s.count / total : 0,
+        })),
+        info: slotSets[idx],
+      }
+    })
   }
 
   /**
@@ -251,177 +424,52 @@ export default class GameState {
   monteCarloSlotProbabilities(slotSets, currentPlayer = null, N = 100) {
     const numSlots = slotSets.length
     const numEmptySlots = slotSets.filter((s) => s.candidates.size === 0).length
-    // Build a set of card ids for currentPlayer if provided
     const currentPlayerCardIds = currentPlayer ? new Set(currentPlayer.hand.map((c) => c.id)) : null
 
-    // Count all cards in play (no double-counting)
-    const allCardsInHands = this.players.flatMap((p) => p.hand)
-
-    // Count visible blue, yellow, red
-    let yellowCount = 0
-    let redCount = 0
-    const pool = []
-
-    for (const c of allCardsInHands) {
-      const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
-      if (c.color === 'blue' && !isVisible) pool.push(c)
-      if (c.color === 'yellow' && !isVisible) yellowCount++
-      if (c.color === 'red' && !isVisible) redCount++
-    }
-    const yellowPool = []
-    for (const y of this.yellowWires) {
-      if (!y.revealed && !y.infoToken && !currentPlayerCardIds?.has(y.id)) {
-        yellowPool.push(y)
-      }
-    }
-    const redPool = []
-    for (const r of this.redWires) {
-      if (!r.revealed && !r.infoToken && !currentPlayerCardIds?.has(r.id)) {
-        redPool.push(r)
-      }
-    }
-    pool.sort((a, b) => a.number - b.number) // Sort by number ascending
-    // Monte Carlo sampling
+    const pools = this._buildCardPools(currentPlayerCardIds)
     const slotNumberCounts = Array(numSlots)
       .fill(0)
       .map(() => ({}))
 
     let successRun = 0
     for (let sim = 0; (sim < N || successRun < 10) && sim < N * 10; ++sim) {
-      // Shuffle pool
-      let randomYellow = []
-      let randomRed = []
-      if (yellowCount) {
-        // lets put yellowMax - yellowCount yellow wires in the pool
-        randomYellow = [...yellowPool].sort(() => Math.random() - 0.5).slice(0, yellowCount)
-      }
-      if (redCount) {
-        randomRed = [...redPool].sort(() => Math.random() - 0.5).slice(0, redCount)
-      }
-      // shuffle, but give some preference to lower numbers
-      const shuffled = [...pool, ...randomYellow, ...randomRed].sort(
-        (a, b) => a.number - b.number + Math.random() * 10 - 5,
-      )
+      const shuffled = this._createShuffledDeck(pools)
+
       if (shuffled.length < numSlots - numEmptySlots) {
         console.warn(
           'Not enough cards in pool for Monte Carlo sampling:',
           'pool',
-          pool.length,
+          pools.pool.length,
           'yellow',
-          randomYellow.length,
+          pools.yellowCount,
           'red',
-          randomRed.length,
+          pools.redCount,
           'needed',
           numSlots,
         )
         break
       }
-      // Try to assign to slots
-      let valid = true
-      let minVal = 1
-      let currentPlayerId = null
+
       const assignment = Array(numSlots)
-      // --- Assign knownCards to random valid slots for each player ---
-      // Group slots by player
-      const playerSlotIndices = {}
-      for (let s = 0; s < numSlots; ++s) {
-        const pid = slotSets[s].player.id
+      this._assignKnownCards(slotSets, assignment, shuffled)
 
-        if (!slotSets[s].player.knownWires) continue // No known cards for this player
-        if (!playerSlotIndices[pid]) playerSlotIndices[pid] = []
-        playerSlotIndices[pid].push(s)
-      }
+      if (!this._assignRemainingSlots(slotSets, assignment, shuffled)) continue
 
-      // For each player, assign their knownCards
-      Object.entries(playerSlotIndices).forEach(([, slots]) => {
-        const knownWires = [...(slotSets[slots[0]].player.knownWires || [])]
-        knownWires.forEach((knownCard) => {
-          if (knownCard.color === 'yellow') {
-            // not supported yet
-            return
-          }
-          // Find all slots for this player that accept this knownCard
-          const validSlots = slots.filter(
-            (s) => !assignment[s] && slotSets[s].candidates.has(knownCard.number),
-          )
-          if (validSlots.length) {
-            // Pick one at random
-            const pickIdx = validSlots[Math.floor(Math.random() * validSlots.length)]
-            assignment[pickIdx] = knownCard.number
-            // Remove the card from shuffled
-            const removeIdx = shuffled.findIndex((c) => c.number === knownCard.number)
-            if (removeIdx !== -1) shuffled.splice(removeIdx, 1)
-          }
-        })
-      })
-      // --- End knownCards assignment ---
-      for (let s = 0; s < numSlots; ++s) {
-        if (slotSets[s].candidates.size === 0) {
-          continue
-        }
-        if (assignment[s]) continue // Already assigned by knownCards
-        // Find a number in shuffled that is in slotSets[s]
-        let foundIdx = -1
-        if (slotSets[s].player.id !== currentPlayerId) {
-          currentPlayerId = slotSets[s].player.id
-          minVal = 1
-        }
-
-        for (let k = 0; k < shuffled.length; ++k) {
-          const number = shuffled[k].number
-          if (number >= minVal && slotSets[s].candidates.has(number)) {
-            foundIdx = k
-            minVal = number
-            break
-          }
-        }
-        if (foundIdx === -1) {
-          valid = false
-          break
-        }
-
-        assignment[s] = shuffled[foundIdx].number
-        shuffled.splice(foundIdx, 1)
-      }
-      if (!valid) continue
       successRun++
-      // Accumulate
+
+      // Accumulate results
       for (let s = 0; s < numSlots; ++s) {
         const v = assignment[s]
-        if (v === null || v === undefined) continue // No candidates, skip this slot
-        slotNumberCounts[s][v] = (slotNumberCounts[s][v] || 0) + 1
+        if (v !== null && v !== undefined) {
+          slotNumberCounts[s][v] = (slotNumberCounts[s][v] || 0) + 1
+        }
       }
     }
+
     if (successRun < N / 100) {
       console.warn('Monte Carlo sampling did not find enough valid runs:', successRun, 'out of', N)
     }
-    // Compute probabilities
-    return slotNumberCounts.map((counts, idx) => {
-      let total = 0
-      const slots = []
-      Object.entries(counts).forEach(([val, count]) => {
-        total += count
-        const digit = (Number(val) * 10) % 10
-        let color
-        if (digit === 0) {
-          color = 'blue'
-        } else if (digit === 1) {
-          color = 'yellow'
-        } else {
-          color = 'red'
-        }
-        slots.push({ number: Number(val), count, color })
-      })
-      slots.sort((a, b) => b.count - a.count)
 
-      return {
-        slots: slots.map((s) => ({
-          number: s.number,
-          color: s.color,
-          probability: total > 0 ? s.count / total : 0,
-        })),
-        info: slotSets[idx],
-      }
-    })
+    return this._computeProbabilities(slotNumberCounts, slotSets)
   }
 }
