@@ -10,19 +10,16 @@ export function useGameStateManager() {
   if (!gameStateInstance) {
     gameStateInstance = reactive(new GameState({}))
   }
-  // Create a new game with the given configuration
-  function createNewGame({
-    numPlayers = 4,
-    hasHuman = true,
-    doubleDetectorEnabled = true,
-    yellow: { created: yellowCreated = 0, onBoard: yellowOnBoard = 0 } = {},
-    red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
-    autoStart = false,
-  }) {
+
+  // Helper function to validate game parameters
+  function validateGameParameters(numPlayers) {
     if (numPlayers < 3 || numPlayers > 5) {
       throw new Error('Number of players must be between 3 and 5.')
     }
-    // Create players
+  }
+
+  // Helper function to create game players
+  function createGamePlayers(numPlayers, hasHuman, doubleDetectorEnabled) {
     const players = []
     for (let i = 0; i < numPlayers; i++) {
       if (hasHuman && i === 0) {
@@ -45,8 +42,11 @@ export function useGameStateManager() {
         )
       }
     }
+    return players
+  }
 
-    // Create blue wires (4 of each number 1-12)
+  // Helper function to create blue wire tiles
+  function createBlueWires() {
     const blueWires = []
     for (let n = 1; n <= 12; n++) {
       for (let i = 0; i < 4; i++) {
@@ -59,45 +59,37 @@ export function useGameStateManager() {
         )
       }
     }
+    return blueWires
+  }
 
-    // Create yellow wires (pick random numbers, number is x.1)
-    let yellowNumbers = Array.from({ length: 11 }, (_, i) => i + 1)
-    yellowNumbers = yellowNumbers.sort(() => Math.random() - 0.5)
-    const yellowWires = []
-    for (let i = 0; i < yellowCreated && i < yellowNumbers.length; i++) {
-      yellowWires.push(
+  // Helper function to create colored wires (yellow or red)
+  function createColoredWires(color, count) {
+    const offset = color === 'yellow' ? 0.1 : 0.5
+    let numbers = Array.from({ length: 11 }, (_, i) => i + 1)
+    numbers = numbers.sort(() => Math.random() - 0.5)
+    const wires = []
+    for (let i = 0; i < count && i < numbers.length; i++) {
+      wires.push(
         new WireTile({
-          id: `yellow-${yellowNumbers[i]}`,
-          color: 'yellow',
-          number: yellowNumbers[i] + 0.1,
+          id: `${color}-${numbers[i]}`,
+          color,
+          number: numbers[i] + offset,
         }),
       )
     }
+    return wires
+  }
 
-    // Create red wires (pick random numbers, number is x.5)
-    let redNumbers = Array.from({ length: 11 }, (_, i) => i + 1)
-    redNumbers = redNumbers.sort(() => Math.random() - 0.5)
-    const redWires = []
-    for (let i = 0; i < redCreated && i < redNumbers.length; i++) {
-      redWires.push(
-        new WireTile({
-          id: `red-${redNumbers[i]}`,
-          color: 'red',
-          number: redNumbers[i] + 0.5,
-        }),
-      )
-    }
-    const allWires = [...blueWires, ...yellowWires, ...redWires]
-
-    // Select yellow/red wires to be on the board
+  // Helper function to select wires for the board and shuffle them
+  function prepareWiresForBoard({ blueWires, yellowWires, redWires, yellowOnBoard, redOnBoard }) {
     const yellowOnBoardWires = yellowWires.slice(0, yellowOnBoard)
     const redOnBoardWires = redWires.slice(0, redOnBoard)
-    // Remove yellow/red wires not on board
-    let allWiresOnBoard = [...blueWires, ...yellowOnBoardWires, ...redOnBoardWires]
-    // Shuffle again for distribution
-    allWiresOnBoard = allWiresOnBoard.sort(() => Math.random() - 0.5)
+    const allWiresOnBoard = [...blueWires, ...yellowOnBoardWires, ...redOnBoardWires]
+    return allWiresOnBoard.sort(() => Math.random() - 0.5)
+  }
 
-    // Distribute wires to players
+  // Helper function to distribute wires to players
+  function distributeWiresToPlayers(players, allWiresOnBoard) {
     let playerIndex = 0
     for (const wire of allWiresOnBoard) {
       players[playerIndex].hand.push(wire)
@@ -107,8 +99,17 @@ export function useGameStateManager() {
     for (const player of players) {
       player.hand.sort((a, b) => a.number - b.number)
     }
+  }
 
-    // Reset state
+  // Helper function to initialize game state
+  function initializeGameState({
+    players,
+    allWires,
+    yellowWires,
+    redWires,
+    numPlayers,
+    autoStart,
+  }) {
     Object.assign(
       gameStateInstance,
       new GameState({
@@ -127,6 +128,44 @@ export function useGameStateManager() {
         autoStart,
       }),
     )
+  }
+
+  // Create a new game with the given configuration
+  function createNewGame({
+    numPlayers = 4,
+    hasHuman = true,
+    doubleDetectorEnabled = true,
+    yellow: { created: yellowCreated = 0, onBoard: yellowOnBoard = 0 } = {},
+    red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
+    autoStart = false,
+  }) {
+    validateGameParameters(numPlayers)
+
+    const players = createGamePlayers(numPlayers, hasHuman, doubleDetectorEnabled)
+    const blueWires = createBlueWires()
+    const yellowWires = createColoredWires('yellow', yellowCreated)
+    const redWires = createColoredWires('red', redCreated)
+    const allWires = [...blueWires, ...yellowWires, ...redWires]
+
+    const allWiresOnBoard = prepareWiresForBoard({
+      blueWires,
+      yellowWires,
+      redWires,
+      yellowOnBoard,
+      redOnBoard,
+    })
+
+    distributeWiresToPlayers(players, allWiresOnBoard)
+
+    initializeGameState({
+      players,
+      allWires,
+      yellowWires,
+      redWires,
+      numPlayers,
+      autoStart,
+    })
+
     if (autoStart) {
       startPickRound()
     }
@@ -509,6 +548,14 @@ export function useGameStateManager() {
     advancePickRound,
     advancePlayRound,
     playRound,
+    // Helper functions for testing
+    validateGameParameters,
+    createGamePlayers,
+    createBlueWires,
+    createColoredWires,
+    prepareWiresForBoard,
+    distributeWiresToPlayers,
+    initializeGameState,
     // ...other methods
   }
 }
