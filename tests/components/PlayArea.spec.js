@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import PlayArea from '../../src/components/PlayArea.vue'
 import { withQuasar } from '../test-utils.js'
 
@@ -847,6 +847,64 @@ describe('PlayArea Component', () => {
       updatedDecks.forEach((deck) => {
         expect(deck.props('candidates')).toBeDefined()
       })
+    })
+
+    it('triggers template arrow function for other player picks', async () => {
+      const testState = {
+        ...mockState,
+        phase: 'play-phase',
+        currentPicker: 0,
+        players: [
+          {
+            id: 0,
+            name: 'Alice',
+            hand: [{ id: 'alice1', number: 1, color: 'blue' }],
+            isAI: false,
+          },
+          {
+            id: 1,
+            name: 'Bob',
+            hand: [{ id: 'bob1', number: 2, color: 'blue' }],
+            isAI: true,
+          },
+          {
+            id: 2,
+            name: 'Charlie',
+            hand: [{ id: 'charlie1', number: 3, color: 'blue' }],
+            isAI: true,
+          },
+        ],
+      }
+
+      const wrapper = mount(
+        PlayArea,
+        withQuasar({
+          props: { ...defaultProps, state: testState },
+          global: { stubs: ['PlayerDeck', 'QToggle'] },
+        }),
+      )
+
+      // Set source card to enable other player selection
+      wrapper.vm.playSelection = {
+        sourceCard: { id: 'alice1' },
+        targetCard: null,
+        secondTargetCard: null,
+      }
+      await wrapper.vm.$nextTick()
+
+      // Spy on the handleOtherPlayerPick method
+      const spyHandleOtherPlayerPick = vi.spyOn(wrapper.vm, 'handleOtherPlayerPick')
+
+      // Get other player decks and emit pick events to test the template arrow functions
+      const otherPlayerDecks = wrapper.findAllComponents('[visible="false"]')
+
+      // Trigger pick on Bob's deck (template: @pick="(card) => handleOtherPlayerPick(card, player.id)")
+      await otherPlayerDecks[0].vm.$emit('pick', { id: 'bob1' })
+      expect(spyHandleOtherPlayerPick).toHaveBeenCalledWith({ id: 'bob1' }, 1)
+
+      // Trigger pick on Charlie's deck
+      await otherPlayerDecks[1].vm.$emit('pick', { id: 'charlie1' })
+      expect(spyHandleOtherPlayerPick).toHaveBeenCalledWith({ id: 'charlie1' }, 2)
     })
   })
 

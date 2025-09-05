@@ -110,16 +110,19 @@ tests/                  # Comprehensive test suite (265 tests)
 **Bomb Buster** is a cooperative deduction game where players work as a team of bomb disposal experts:
 
 ### Objective
+
 - **Win**: Cut all safe wires (blue and yellow) before the detonator explodes
 - **Lose**: Cut a red wire (instant explosion) or let the detonator dial reach 💀
 
 ### Gameplay
+
 - **Dual Cut**: Guess a teammate's wire value and cut matching wires
 - **Solo Cut**: Cut multiple identical wires from your own hand
 - **Equipment**: Use special abilities when certain wires are cut
 - **Detonator Dial**: Advances on wrong guesses, bringing you closer to defeat
 
 ### Features
+
 - **Multiple AI Strategies**: Different AI personalities and difficulty levels
 - **Game Simulation**: Monte Carlo analysis for strategy optimization
 - **Statistics Tracking**: Detailed performance metrics and game history
