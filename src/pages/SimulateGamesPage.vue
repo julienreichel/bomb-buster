@@ -58,42 +58,63 @@ const tableColumns = [
   { name: 'totalRuns', label: 'Total Runs', field: 'totalRuns', align: 'right' },
 ]
 
+function getStoredStats(playerCount) {
+  const key = getStatsKey({
+    players: playerCount,
+    yellowCreated: yellowCreated.value,
+    yellowOnBoard: yellowOnBoard.value,
+    redCreated: redCreated.value,
+    redOnBoard: redOnBoard.value,
+    doubleDetectorEnabled: doubleDetectorEnabled.value,
+  })
+  const stored = localStorage.getItem(key)
+  return stored ? JSON.parse(stored) : null
+}
+
+function calculateSuccessCount(stat) {
+  return (
+    (stat?.dialCounts?.[5] || 0) +
+    (stat?.dialCounts?.[4] || 0) +
+    (stat?.dialCounts?.[3] || 0) +
+    (stat?.dialCounts?.[2] || 0) +
+    (stat?.dialCounts?.[1] || 0)
+  )
+}
+
+function calculateSuccessRate(stat) {
+  const totalRuns = stat?.totalRuns || 0
+  if (totalRuns === 0) return '0.0'
+  
+  const success = calculateSuccessCount(stat)
+  return ((success / totalRuns) * 100).toFixed(1)
+}
+
+function getDialCount(stat, dialValue) {
+  return stat?.dialCounts?.[dialValue] || 0
+}
+
+function createTableRow(playerCount, stat) {
+  return {
+    players: playerCount,
+    yellows: `${yellowOnBoard.value} / ${yellowCreated.value}`,
+    reds: `${redOnBoard.value} / ${redCreated.value}`,
+    doubleDetector: doubleDetectorEnabled.value ? 'Yes' : 'No',
+    dial5: getDialCount(stat, 5),
+    dial4: getDialCount(stat, 4),
+    dial3: getDialCount(stat, 3),
+    dial2: getDialCount(stat, 2),
+    dial1: getDialCount(stat, 1),
+    dial0: getDialCount(stat, 0),
+    successRate: calculateSuccessRate(stat),
+    totalRuns: stat?.totalRuns || 0,
+  }
+}
+
 const tableRows = computed(() => {
-  // For each player count 3, 4, 5, try to get stats from localStorage
   const rows = []
   for (let p = 3; p <= 5; ++p) {
-    const key = getStatsKey({
-      players: p,
-      yellowCreated: yellowCreated.value,
-      yellowOnBoard: yellowOnBoard.value,
-      redCreated: redCreated.value,
-      redOnBoard: redOnBoard.value,
-      doubleDetectorEnabled: doubleDetectorEnabled.value,
-    })
-    const stored = localStorage.getItem(key)
-    const stat = stored ? JSON.parse(stored) : null
-    const totalRuns = stat?.totalRuns || 0
-    const success =
-      (stat?.dialCounts?.[5] || 0) +
-      (stat?.dialCounts?.[4] || 0) +
-      (stat?.dialCounts?.[3] || 0) +
-      (stat?.dialCounts?.[2] || 0) +
-      (stat?.dialCounts?.[1] || 0)
-    const successRate = totalRuns > 0 ? ((success / totalRuns) * 100).toFixed(1) : '0.0'
-    rows.push({
-      players: p,
-      yellows: `${yellowOnBoard.value} / ${yellowCreated.value}`,
-      reds: `${redOnBoard.value} / ${redCreated.value}`,
-      doubleDetector: doubleDetectorEnabled.value ? 'Yes' : 'No',
-      dial5: stat?.dialCounts?.[5] || 0,
-      dial4: stat?.dialCounts?.[4] || 0,
-      dial3: stat?.dialCounts?.[3] || 0,
-      dial2: stat?.dialCounts?.[2] || 0,
-      dial1: stat?.dialCounts?.[1] || 0,
-      dial0: stat?.dialCounts?.[0] || 0,
-      successRate,
-      totalRuns,
-    })
+    const stat = getStoredStats(p)
+    rows.push(createTableRow(p, stat))
   }
   return rows
 })
