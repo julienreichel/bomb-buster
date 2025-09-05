@@ -1,11 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import {
-  validateGameParameters,
-  createGamePlayers,
   createBlueWires,
   createColoredWires,
-  prepareWiresForBoard,
+  createGamePlayers,
   distributeWiresToPlayers,
+  prepareWiresForBoard,
+  validateGameParameters,
 } from '../../src/composables/managers/GameSetupHelpers.js'
 
 describe('GameSetupHelpers', () => {
@@ -23,15 +23,11 @@ describe('GameSetupHelpers', () => {
     })
 
     it('should throw for too few players (2)', () => {
-      expect(() => validateGameParameters(2)).toThrow(
-        'Number of players must be between 3 and 5.',
-      )
+      expect(() => validateGameParameters(2)).toThrow('Number of players must be between 3 and 5.')
     })
 
     it('should throw for too many players (6)', () => {
-      expect(() => validateGameParameters(6)).toThrow(
-        'Number of players must be between 3 and 5.',
-      )
+      expect(() => validateGameParameters(6)).toThrow('Number of players must be between 3 and 5.')
     })
   })
 
