@@ -128,6 +128,61 @@ export default class GameState {
   // CANDIDATES_FOR_SLOT: returns a Set of possible wire kinds for a slot
   // This version computes remaining counts from all players' hands and the board
   /**
+   * Helper method to count visible cards by color
+   * @param {Array} allCardsInHands - All cards from all players
+   * @param {Set|null} currentPlayerCardIds - Card IDs to consider as visible
+   * @returns {Object} Object with blueCounts array, yellowCount, and redCount
+   */
+  _countVisibleCards(allCardsInHands, currentPlayerCardIds) {
+    const blueCounts = Array(13).fill(0) // 1..12
+    let yellowCount = 0
+    let redCount = 0
+    
+    for (const c of allCardsInHands) {
+      const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
+      if (c.color === 'blue' && isVisible) blueCounts[c.number]++
+      if (c.color === 'yellow' && isVisible) yellowCount++
+      if (c.color === 'red' && isVisible) redCount++
+    }
+    
+    return { blueCounts, yellowCount, redCount }
+  }
+
+  /**
+   * Helper method to add blue wire candidates
+   * @param {Set} candidates - Set to add candidates to
+   * @param {Array} blueCounts - Count of visible blue cards by number
+   * @param {number} L - Lower bound of interval
+   * @param {number} U - Upper bound of interval
+   */
+  _addBlueCandidates(candidates, blueCounts, L, U) {
+    const blueMax = 4
+    for (let k = 1; k <= 12; ++k) {
+      if (blueCounts[k] < blueMax && L <= k && k <= U) {
+        candidates.add(k)
+      }
+    }
+  }
+
+  /**
+   * Helper method to add colored wire candidates (yellow or red)
+   * @param {Set} candidates - Set to add candidates to
+   * @param {Object} params - Object containing wires, currentPlayerCardIds, L, U
+   */
+  _addColoredWireCandidates(candidates, { wires, currentPlayerCardIds, L, U }) {
+    wires.forEach((wire) => {
+      if (
+        !wire.revealed &&
+        !currentPlayerCardIds?.has(wire.id) &&
+        L <= wire.number &&
+        wire.number <= U
+      ) {
+        candidates.add(wire.number)
+      }
+    })
+  }
+
+  /**
    * Returns a Set of possible wire kinds for a slot
    * @param {Object} player - The player whose slot is being checked
    * @param {number} idx - The index in the player's hand
@@ -143,18 +198,9 @@ export default class GameState {
     // Count all cards in play (no double-counting)
     const allCardsInHands = this.players.flatMap((p) => p.hand)
 
-    // Count visible blue, yellow, red
-    const blueCounts = Array(13).fill(0) // 1..12
-    let yellowCount = 0
-    let redCount = 0
-    for (const c of allCardsInHands) {
-      const isVisible = c.revealed || c.infoToken || currentPlayerCardIds?.has(c.id)
-      if (c.color === 'blue' && isVisible) blueCounts[c.number]++
-      if (c.color === 'yellow' && isVisible) yellowCount++
-      if (c.color === 'red' && isVisible) redCount++
-    }
+    // Count visible cards by color
+    const { blueCounts, yellowCount, redCount } = this._countVisibleCards(allCardsInHands, currentPlayerCardIds)
 
-    const blueMax = 4
     const yellowMax = allCardsInHands.filter((c) => c.color === 'yellow').length
     const redMax = allCardsInHands.filter((c) => c.color === 'red').length
 
@@ -166,42 +212,33 @@ export default class GameState {
       yellowWires: yellowCount < yellowMax ? this.yellowWires : null,
       redWires: redCount < redMax ? this.redWires : null,
     })
-    const S = new Set()
+    
+    const candidates = new Set()
 
-    // For blue, check if not present in play
-    for (let k = 1; k <= 12; ++k) {
-      if (blueCounts[k] < blueMax && L <= k && k <= U) {
-        S.add(k)
-      }
-    }
-    // For yellow, if any left and fits interval
+    // Add blue candidates
+    this._addBlueCandidates(candidates, blueCounts, L, U)
+    
+    // Add yellow candidates if any left
     if (yellowCount < yellowMax) {
-      this.yellowWires.forEach((wire) => {
-        if (
-          !wire.revealed &&
-          !currentPlayerCardIds?.has(wire.id) &&
-          L <= wire.number &&
-          wire.number <= U
-        ) {
-          S.add(wire.number)
-        }
+      this._addColoredWireCandidates(candidates, {
+        wires: this.yellowWires,
+        currentPlayerCardIds,
+        L,
+        U
       })
     }
-    // For red, if any left and fits interval
+    
+    // Add red candidates if any left
     if (redCount < redMax) {
-      this.redWires.forEach((wire) => {
-        if (
-          !wire.revealed &&
-          !currentPlayerCardIds?.has(wire.id) &&
-          L <= wire.number &&
-          wire.number <= U
-        ) {
-          S.add(wire.number)
-        }
+      this._addColoredWireCandidates(candidates, {
+        wires: this.redWires,
+        currentPlayerCardIds,
+        L,
+        U
       })
     }
 
-    return S
+    return candidates
   }
 
   /**
