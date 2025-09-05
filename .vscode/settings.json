@@ -84,6 +84,7 @@
     "plaintext": false
   },
   "github.copilot.editor.enableAutoCompletions": true,
+  "github.copilot.chat.codeGeneration.useInstructionFiles": true,
 
   // Vue specific settings
   "vetur.validation.template": false,
