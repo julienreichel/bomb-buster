@@ -30,7 +30,7 @@
         <div class="text-caption">
           <span v-if="candidates.probability?.slots[0]">
             ({{ (candidates.probability.slots[0].probability * 100).toFixed(1) }}%)
-            {{ candidates.probability.slots[0].value }}
+            {{ candidates.probability.slots[0].number }}
           </span>
         </div>
       </template>
