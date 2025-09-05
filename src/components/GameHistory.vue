@@ -44,40 +44,63 @@ const movesToShow = computed(() => {
   return props.moveHistory.slice(-n)
 })
 
+function getPlayerName(playerIdx) {
+  return props.players[playerIdx]?.name ?? `P${playerIdx}`
+}
+
+function formatDoubleDetectorTargets(targetPlayerName, targetCardId, secondTargetCardId) {
+  if (!targetPlayerName || !targetCardId || !secondTargetCardId) return ''
+  return ` vs ${targetPlayerName}'s ${targetCardId} & ${secondTargetCardId}`
+}
+
+function formatSingleTarget(targetPlayerName, targetCardId) {
+  if (!targetPlayerName || !targetCardId) return ''
+  return ` vs ${targetPlayerName}'s ${targetCardId}`
+}
+
+function formatPlayResult(result) {
+  let resultText = ''
+  if (result?.outcome) {
+    resultText += ` → ${result.outcome.replace(/-/g, ' ')}`
+  }
+  if (result?.infoToken) {
+    resultText += ' [info token]'
+  }
+  if (typeof result?.detonatorDial === 'number') {
+    resultText += ` [dial: ${result.detonatorDial}]`
+  }
+  return resultText
+}
+
+function formatPlayAction(move, sourcePlayerName, targetPlayerName) {
+  const { sourceCardId, doubleDetector, targetCardId, secondTargetCardId, result } = move
+
+  let desc = `${sourcePlayerName} played ${sourceCardId}`
+  
+  if (doubleDetector) {
+    desc += ' [DOUBLE DETECTOR]'
+    desc += formatDoubleDetectorTargets(targetPlayerName, targetCardId, secondTargetCardId)
+  } else {
+    desc += formatSingleTarget(targetPlayerName, targetCardId)
+  }
+  
+  desc += formatPlayResult(result)
+  return desc
+}
+
 function moveSummary(move) {
   if (!move) return ''
-  const {
-    type,
-    sourcePlayerIdx,
-    sourceCardId,
-    targetPlayerIdx,
-    targetCardId,
-    secondTargetCardId,
-    doubleDetector,
-    result,
-  } = move
-  const src = props.players[sourcePlayerIdx]?.name ?? `P${sourcePlayerIdx}`
-  const tgt =
-    targetPlayerIdx !== null && props.players[targetPlayerIdx]
-      ? props.players[targetPlayerIdx].name
-      : null
-  let desc = ''
+  
+  const { type, sourcePlayerIdx, targetPlayerIdx } = move
+  const sourcePlayerName = getPlayerName(sourcePlayerIdx)
+  const targetPlayerName = targetPlayerIdx !== null && props.players[targetPlayerIdx]
+    ? props.players[targetPlayerIdx].name
+    : null
+  
   if (type === 'play') {
-    desc = `${src} played ${sourceCardId}`
-    if (doubleDetector) {
-      desc += ' [DOUBLE DETECTOR]'
-      if (tgt && targetCardId && secondTargetCardId) {
-        desc += ` vs ${tgt}'s ${targetCardId} & ${secondTargetCardId}`
-      }
-    } else if (tgt && targetCardId) {
-      desc += ` vs ${tgt}'s ${targetCardId}`
-    }
-    if (result?.outcome) desc += ` → ${result.outcome.replace(/-/g, ' ')}`
-    if (result?.infoToken) desc += ' [info token]'
-    if (typeof result?.detonatorDial === 'number') desc += ` [dial: ${result.detonatorDial}]`
-  } else {
-    desc = `${src} action`
+    return formatPlayAction(move, sourcePlayerName, targetPlayerName)
   }
-  return desc
+  
+  return `${sourcePlayerName} action`
 }
 </script>
