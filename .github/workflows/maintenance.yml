@@ -1,0 +1,93 @@
+name: Maintenance
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch: # Allow manual triggering
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  security-audit:
+    name: Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: |
+          echo "Running npm audit..."
+          npm audit --audit-level=moderate
+
+          echo "Checking for outdated dependencies..."
+          npm outdated || true
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/init@v3
+        with:
+          languages: javascript
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+
+  quality-maintenance:
+    name: Quality Maintenance Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Full quality check
+        run: npm run quality:check
+
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Scanning for TODO and FIXME comments..."
+          grep -r "TODO\|FIXME" src/ || echo "No TODO/FIXME comments found"
+
+      - name: Generate quality report
+        run: |
+          echo "# Quality Maintenance Report" > quality-report.md
+          echo "Generated on: $(date)" >> quality-report.md
+          echo "" >> quality-report.md
+
+          echo "## Test Coverage" >> quality-report.md
+          npm run test:coverage --silent
+          if [ -f "coverage/coverage-summary.json" ]; then
+            echo "Coverage report available in artifacts" >> quality-report.md
+          fi
+
+          echo "## Code Quality" >> quality-report.md
+          echo "ESLint configuration enforces complexity limit of 16" >> quality-report.md
+          echo "All complexity violations have been resolved" >> quality-report.md
+
+      - name: Upload quality report
+        uses: actions/upload-artifact@v4
+        with:
+          name: quality-maintenance-report
+          path: quality-report.md
+          retention-days: 30

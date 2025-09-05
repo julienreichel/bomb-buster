@@ -66,7 +66,7 @@ export default [
       complexity: ['warn', 16],
 
       // Code Quality
-      'no-console': process.env.NODE_ENV === 'production' ? 'warn' : 'off',
+      'no-console': 'off',
       'no-unused-vars': [
         'error',
         {

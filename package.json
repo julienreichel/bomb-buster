@@ -22,6 +22,7 @@
     "coverage": "vitest run --coverage",
     "test:browser": "vitest",
     "quality:check": "npm run lint && npm run format:check && npm run test:coverage",
+    "quality:local": "./scripts/quality-check.sh",
     "prepare": "husky install || true"
   },
   "dependencies": {
