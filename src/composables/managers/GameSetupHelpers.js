@@ -108,16 +108,9 @@ export function initializeGameState(
     new GameState({
       players,
       wires: allWires,
-      equipment: [],
-      detonatorDial: numPlayers,
-      turn: 0,
-      mission: null,
-      history: [],
       yellowWires,
       redWires,
-      phase: null,
-      currentPicker: null,
-      pickedCards: [],
+      detonatorDial: numPlayers,
       autoStart,
     }),
   )
@@ -192,10 +185,7 @@ export function advancePlayRound(gameState) {
 }
 
 // Helper function to validate play round inputs
-function validatePlayInputs(
-  gameState,
-  { sourcePlayerIdx, sourceCardId, _targetPlayerIdx, _targetCardId, secondTargetCardId },
-) {
+function validatePlayInputs(gameState, { sourcePlayerIdx, sourceCardId, secondTargetCardId }) {
   const players = gameState.players
 
   if (sourcePlayerIdx === null || sourcePlayerIdx === undefined) return { isValid: false }
@@ -496,8 +486,6 @@ export function playRound(
   const inputValidation = validatePlayInputs(gameState, {
     sourcePlayerIdx,
     sourceCardId,
-    _targetPlayerIdx: targetPlayerIdx,
-    _targetCardId: targetCardId,
     secondTargetCardId,
   })
   if (!inputValidation.isValid) return invalidPick()

@@ -250,6 +250,103 @@ describe('PlayArea Component', () => {
     expect(wrapper.vm.showCandidates).toBe(true)
   })
 
+  it('handles pick phase correctly', async () => {
+    const pickPhaseState = {
+      ...mockState,
+      phase: 'pick-card',
+      currentPicker: 0,
+      players: [
+        {
+          id: 0,
+          name: 'Alice',
+          hand: [
+            { id: 'blue1', type: 'blue', number: 1, color: 'blue' },
+            { id: 'blue2', type: 'blue', number: 2, color: 'blue' },
+          ],
+          isAI: false,
+          pickCard: vi.fn(() => ({ id: 'blue1' })),
+        },
+        { id: 1, name: 'Bob', hand: [], isAI: true },
+      ],
+    }
+
+    const wrapper = mount(
+      PlayArea,
+      withQuasar({
+        props: {
+          ...defaultProps,
+          state: pickPhaseState,
+        },
+        global: {
+          stubs: ['PlayerDeck', 'QToggle'],
+        },
+      }),
+    )
+
+    // Should show pick phase message
+    expect(wrapper.vm.isPickPhase).toBe(true)
+    expect(wrapper.vm.isHumanTurn).toBe(true)
+    expect(wrapper.vm.playMessage).toBe('Your turn: pick a blue card')
+
+    // Should show the message in UI
+    const message = wrapper.find('.text-primary.text-h6')
+    expect(message.exists()).toBe(true)
+    expect(message.text()).toBe('Your turn: pick a blue card')
+
+    // Selected player deck should be selectable
+    const selectedPlayerDeck = wrapper.findComponent('[visible="true"]')
+    expect(selectedPlayerDeck.props('selectable')).toBe(true)
+
+    // Should call handlePlayerDeckPick when picking a card
+    const mockCard = { id: 'blue1', type: 'blue', number: 1 }
+    await selectedPlayerDeck.vm.$emit('pick', mockCard)
+
+    // Should call advancePickRound after successful pick
+    expect(mockAdvancePickRound).toHaveBeenCalled()
+  })
+
+  it('handles game initialization and auto-start pick phase', () => {
+    // Test that the component works when game is auto-started
+    const autoStartState = {
+      ...mockState,
+      phase: 'pick-card',
+      currentPicker: 0,
+      players: [
+        {
+          id: 0,
+          name: 'Alice',
+          hand: [{ id: 'blue1', type: 'blue', number: 1, color: 'blue' }],
+          isAI: false,
+          pickCard: vi.fn(() => ({ id: 'blue1' })),
+        },
+        { id: 1, name: 'Bob', hand: [], isAI: true },
+      ],
+    }
+
+    const wrapper = mount(
+      PlayArea,
+      withQuasar({
+        props: {
+          ...defaultProps,
+          state: autoStartState,
+        },
+        global: {
+          stubs: ['PlayerDeck', 'QToggle'],
+        },
+      }),
+    )
+
+    // Should be in pick phase and ready for human interaction
+    expect(wrapper.vm.isPickPhase).toBe(true)
+    expect(wrapper.vm.isHumanTurn).toBe(true)
+    expect(wrapper.vm.playMessage).toBe('Your turn: pick a blue card')
+
+    // UI should show the pick message
+    const message = wrapper.find('.text-primary.text-h6')
+    expect(message.exists()).toBe(true)
+    expect(message.text()).toBe('Your turn: pick a blue card')
+  })
+
   describe('Computed Properties', () => {
     it('calculates otherPlayers correctly', () => {
       const testState = {

@@ -11,6 +11,8 @@ export default class GameState {
     history = [],
     yellowWires = [],
     redWires = [],
+    phase = null,
+    pickedCards = [],
     autoStart = false,
   }) {
     this.players = players // Array of Player
@@ -22,7 +24,10 @@ export default class GameState {
     this.history = history
     this.yellowWires = yellowWires
     this.redWires = redWires
+    this.phase = phase
+    this.pickedCards = pickedCards
     this.autoStart = autoStart
+    this.currentPicker = null // Index of current player picking a card (null if none)
   }
   // --- Wire deduction helpers ---
 

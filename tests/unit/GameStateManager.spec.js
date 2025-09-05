@@ -505,7 +505,7 @@ describe('useGameStateManager composable', () => {
         targetCardId: 'b0',
       })
       gameStateManager.state.detonatorDial = 3
-      gameStateManager.phase = 'play-phase'
+      gameStateManager.state.phase = 'play-phase'
 
       gameStateManager.advancePlayRound()
       // Should be waiting for human pick

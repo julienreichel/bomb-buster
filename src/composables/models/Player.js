@@ -185,17 +185,19 @@ export class AIPlayer extends Player {
     const num = Object.keys(valueGroups).find((num) => {
       if (valueGroups[num].length !== 2) return false
       if (num === 'red') return false // No two of a kind for red
-      return gameState.players.every((p) =>
-        p.hand.every((card) => {
-          const isMyCard = p.id === this.id && valueGroups[num].some((c) => c.id === card.id)
-          const isBlueMismatch = card.number !== num && card.isColor('blue')
-          const isYellowMismatch = !card.isColor('blue') && card.color !== num
-          const isRevealed = card.revealed
-          // Check if the card is either my card, a blue mismatch, a yellow mismatch,
-          return isMyCard || isBlueMismatch || isYellowMismatch || isRevealed
-        }),
-      )
+
+      // Count all unrevealed cards that match this number/color across all players
+      const referenceCard = valueGroups[num][0] // Use first card as reference for matching
+      const matchingUnrevealedCount = gameState.players
+        .flatMap((p) => p.hand)
+        .filter((card) => {
+          if (card.revealed) return false
+          return referenceCard.matches(card)
+        }).length
+
+      return matchingUnrevealedCount === 2
     })
+
     if (num) {
       return {
         sourcePlayerIdx: this.id,
