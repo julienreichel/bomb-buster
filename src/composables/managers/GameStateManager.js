@@ -30,6 +30,7 @@ export function useGameStateManager() {
     yellow: { created: yellowCreated = 0, onBoard: yellowOnBoard = 0 } = {},
     red: { created: redCreated = 0, onBoard: redOnBoard = 0 } = {},
     autoStart = false,
+    isSimulation = true,
   }) {
     validateGameParameters(numPlayers)
 
@@ -56,25 +57,28 @@ export function useGameStateManager() {
       redWires,
       numPlayers,
       autoStart,
+      isSimulation,
     })
 
     if (autoStart) {
+      // Don't await in createNewGame to avoid blocking, let it run async
       startPickRound(gameStateInstance)
     }
   }
 
-  function startPickRound(gameState) {
+  async function startPickRound(gameState) {
     gameState.phase = 'pick-card'
     gameState.pickedCards = []
-    advancePickRound(gameState)
+    gameState.currentPicker = 0 // Start with player 0
+    await advancePickRound(gameState)
   }
 
   return {
     state: gameStateInstance,
     createNewGame,
-    startPickRound: () => startPickRound(gameStateInstance),
-    advancePickRound: () => advancePickRound(gameStateInstance),
-    advancePlayRound: () => advancePlayRound(gameStateInstance),
+    startPickRound: async () => await startPickRound(gameStateInstance),
+    advancePickRound: async () => await advancePickRound(gameStateInstance),
+    advancePlayRound: async () => await advancePlayRound(gameStateInstance),
     playRound: (params) => playRound(gameStateInstance, params),
     // Helper functions for testing
     initializeGameState: (params) => initializeGameState(gameStateInstance, params),

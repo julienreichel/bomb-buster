@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+  advancePickRound,
   createBlueWires,
   createColoredWires,
   createGamePlayers,
@@ -7,6 +8,7 @@ import {
   prepareWiresForBoard,
   validateGameParameters,
 } from '../../src/composables/managers/GameSetupHelpers.js'
+import GameState from '../../src/composables/models/GameState.js'
 
 describe('GameSetupHelpers', () => {
   describe('validateGameParameters', () => {
@@ -259,6 +261,202 @@ describe('GameSetupHelpers', () => {
       const distributedWireIds = new Set(players.flatMap((p) => p.hand.map((w) => w.id)))
 
       expect(distributedWireIds).toEqual(originalWireIds)
+    })
+  })
+
+  describe('advancePickRound', () => {
+    let gameState
+
+    beforeEach(() => {
+      // Create a simple game state for testing
+      const players = createGamePlayers(3, false, true) // 3 AI players
+      const wires = createBlueWires().slice(0, 12)
+      distributeWiresToPlayers(players, wires)
+
+      gameState = new GameState({
+        players,
+        wires,
+        yellowWires: [],
+        redWires: [],
+        detonatorDial: 3,
+        autoStart: false, // Don't auto-start to avoid triggering play phase
+        phase: 'pick-card',
+      })
+
+      // Set initial picker
+      gameState.currentPicker = 0
+    })
+
+    it('should advance to next player when current AI player picks', async () => {
+      // To test single advance, we'll pre-pick cards for future players
+      // so the function doesn't continue recursively
+      gameState.players[1].hand[0].infoToken = true // Next player already picked
+      gameState.players[2].hand[0].infoToken = true // Last player already picked
+
+      const initialPicker = gameState.currentPicker
+
+      await advancePickRound(gameState)
+
+      // Should have gone through all rounds and reached play-phase
+      // since all players now have picked
+      expect(gameState.phase).toBe('play-phase')
+      expect(gameState.currentPicker).toBe(null)
+
+      // Initial player should have picked a card (have an infoToken)
+      expect(gameState.players[initialPicker].hand.some((card) => card.infoToken)).toBe(true)
+    })
+
+    it('should transition to play-phase when all players have picked', async () => {
+      // Pre-select cards for first two players
+      gameState.players[0].hand[0].infoToken = true
+      gameState.players[1].hand[0].infoToken = true
+      gameState.currentPicker = 2 // Last player to pick
+
+      await advancePickRound(gameState)
+
+      // Should transition to play-phase
+      expect(gameState.phase).toBe('play-phase')
+      expect(gameState.currentPicker).toBe(null)
+    })
+
+    it('should automatically start play round when autoStart is true and all picked', async () => {
+      // Create a special test case with autoStart enabled
+      const autoStartGameState = new GameState({
+        players: gameState.players,
+        wires: gameState.wires,
+        yellowWires: [],
+        redWires: [],
+        detonatorDial: 3,
+        autoStart: true, // This is the key test
+        phase: 'pick-card',
+      })
+
+      // Pre-select cards for first two players
+      autoStartGameState.players[0].hand[0].infoToken = true
+      autoStartGameState.players[1].hand[0].infoToken = true
+      autoStartGameState.currentPicker = 2 // Last player to pick
+
+      // Verify initial state
+      expect(autoStartGameState.phase).toBe('pick-card')
+
+      await advancePickRound(autoStartGameState)
+
+      // When autoStart is true, it should call advancePlayRound which
+      // immediately ends the game due to no cards being revealed
+      expect(autoStartGameState.phase).toBe('game-over')
+      expect(autoStartGameState.currentPicker).toBe(null)
+
+      // The key assertion: all players should have picked
+      expect(
+        autoStartGameState.players.every((player) => player.hand.some((card) => card.infoToken)),
+      ).toBe(true)
+    })
+
+    it('should not auto-start play round when autoStart is false', async () => {
+      gameState.autoStart = false
+
+      // Pre-select cards for first two players
+      gameState.players[0].hand[0].infoToken = true
+      gameState.players[1].hand[0].infoToken = true
+      gameState.currentPicker = 2 // Last player to pick
+
+      await advancePickRound(gameState)
+
+      // Should transition to play-phase but not start playing automatically
+      expect(gameState.phase).toBe('play-phase')
+      expect(gameState.currentPicker).toBe(null)
+    })
+
+    it('should wait for human player input and not advance automatically', async () => {
+      // Create game with human player
+      const players = createGamePlayers(3, true, true) // Human + 2 AI
+      const wires = createBlueWires().slice(0, 12)
+      distributeWiresToPlayers(players, wires)
+
+      const humanGameState = new GameState({
+        players,
+        wires,
+        yellowWires: [],
+        redWires: [],
+        detonatorDial: 3,
+        autoStart: false,
+        phase: 'pick-card',
+      })
+
+      humanGameState.currentPicker = 0 // Human player's turn
+      const initialPicker = humanGameState.currentPicker
+
+      await advancePickRound(humanGameState)
+
+      // Should not advance past human player who hasn't picked
+      expect(humanGameState.currentPicker).toBe(initialPicker)
+      expect(humanGameState.players[0].hand.some((card) => card.infoToken)).toBe(false)
+    })
+
+    it('should continue with next player after human picks', async () => {
+      // Create game with human player
+      const players = createGamePlayers(3, true, true) // Human + 2 AI
+      const wires = createBlueWires().slice(0, 12)
+      distributeWiresToPlayers(players, wires)
+
+      const humanGameState = new GameState({
+        players,
+        wires,
+        yellowWires: [],
+        redWires: [],
+        detonatorDial: 3,
+        autoStart: false,
+        phase: 'pick-card',
+      })
+
+      humanGameState.currentPicker = 0 // Human player's turn
+      // Simulate human picking a card
+      humanGameState.players[0].hand[0].infoToken = true
+
+      // Pre-pick for the last AI player so we don't go through all rounds
+      humanGameState.players[2].hand[0].infoToken = true
+
+      await advancePickRound(humanGameState)
+
+      // Should have completed the pick round and transitioned to play-phase
+      expect(humanGameState.phase).toBe('play-phase')
+      expect(humanGameState.currentPicker).toBe(null)
+
+      // All players should have picked
+      expect(
+        humanGameState.players.every((player) => player.hand.some((card) => card.infoToken)),
+      ).toBe(true)
+    })
+
+    it('should call advancePlayRound when autoStart is true (regression test)', async () => {
+      // This test specifically checks the regression where the autoStart branch was missing
+      const autoStartGameState = new GameState({
+        players: gameState.players,
+        wires: gameState.wires,
+        yellowWires: [],
+        redWires: [],
+        detonatorDial: 3,
+        autoStart: true,
+        phase: 'pick-card',
+      })
+
+      // Pre-select cards for all players
+      autoStartGameState.players[0].hand[0].infoToken = true
+      autoStartGameState.players[1].hand[0].infoToken = true
+      autoStartGameState.players[2].hand[0].infoToken = true
+      autoStartGameState.currentPicker = 0 // Start from beginning since all are already picked
+
+      await advancePickRound(autoStartGameState)
+
+      // The critical test: if autoStart works, advancePlayRound should be called
+      // which ends the game immediately (since no cards are revealed)
+      // If the bug existed, the phase would stay at 'play-phase' instead of 'game-over'
+      expect(autoStartGameState.phase).toBe('game-over')
+
+      // Additional verification that we went through the full flow
+      expect(
+        autoStartGameState.players.every((player) => player.hand.some((card) => card.infoToken)),
+      ).toBe(true)
     })
   })
 })

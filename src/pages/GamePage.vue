@@ -65,6 +65,7 @@ onMounted(() => {
     yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
     red: { created: redCreated.value, onBoard: redOnBoard.value },
     autoStart: true, // Automatically start the game after setup
+    isSimulation: false, // This is regular gameplay, not a simulation
   })
 })
 </script>

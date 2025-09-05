@@ -3,6 +3,9 @@ import GameState from '../models/GameState.js'
 import { AIPlayer, HumanPlayer } from '../models/Player.js'
 import WireTile from '../models/WireTile.js'
 
+// Constants
+const AI_PAUSE_DURATION_MS = 1000
+
 // Helper function to validate game parameters
 export function validateGameParameters(numPlayers) {
   if (numPlayers < 3 || numPlayers > 5) {
@@ -101,7 +104,7 @@ export function distributeWiresToPlayers(players, allWiresOnBoard) {
 
 export function initializeGameState(
   gameState,
-  { players, allWires, yellowWires, redWires, numPlayers, autoStart },
+  { players, allWires, yellowWires, redWires, numPlayers, autoStart, isSimulation = true },
 ) {
   Object.assign(
     gameState,
@@ -112,37 +115,54 @@ export function initializeGameState(
       redWires,
       detonatorDial: numPlayers,
       autoStart,
+      isSimulation,
     }),
   )
 }
 
 // Advance pick round: AI picks and advances, human waits for UI
-export function advancePickRound(gameState) {
-  const players = gameState.players
-  // If currentPicker is null, start with player 0
-  if (gameState.currentPicker === null) {
-    gameState.currentPicker = 0
-  } else {
-    gameState.currentPicker++
+export async function advancePickRound(gameState) {
+  const currentPlayer = gameState.players[gameState.currentPicker]
+
+  // If current player is human and hasn't picked yet, stop here and wait for human input
+  if (!currentPlayer.isAI && !currentPlayer.hand.some((card) => card.infoToken)) {
+    return
   }
-  if (gameState.currentPicker < players.length) {
-    const current = players[gameState.currentPicker]
-    if (current && current.isAI && current.pickCard) {
-      current.pickCard(gameState)
-      advancePickRound(gameState)
+
+  // If current player is AI, have them pick
+  if (currentPlayer.isAI) {
+    currentPlayer.pickCard(gameState)
+    // Note: pickCard already sets infoToken on the selected card
+
+    // Add 1-second pause for AI players in regular gameplay (not simulations)
+    if (!gameState.isSimulation) {
+      await new Promise((resolve) => setTimeout(resolve, AI_PAUSE_DURATION_MS))
     }
-    // If human, UI will prompt for pick
-  } else {
-    // All players picked, switch to play phase
+  }
+
+  // Move to next player
+  const nextPicker = (gameState.currentPicker + 1) % gameState.players.length
+  gameState.currentPicker = nextPicker
+
+  // Check if all players have picked (everyone has an infoToken)
+  const allPlayersPicked = gameState.players.every((player) =>
+    player.hand.some((card) => card.infoToken),
+  )
+
+  if (allPlayersPicked) {
     gameState.phase = 'play-phase'
     gameState.currentPicker = null
     if (gameState.autoStart) {
       advancePlayRound(gameState)
     }
+    return
   }
+
+  // Continue with next player
+  await advancePickRound(gameState)
 }
 // Advance play round: AI picks and advances, human waits for UI
-export function advancePlayRound(gameState) {
+export async function advancePlayRound(gameState) {
   const players = gameState.players
   function allCardsRevealed() {
     return players.every((player) => player.hand.every((card) => card.revealed))
@@ -176,6 +196,11 @@ export function advancePlayRound(gameState) {
       // AI picks two cards (assume always valid)
       const pick = current.pickPlayCards(gameState)
       playRound(gameState, pick)
+
+      // Add 1-second pause for AI players during regular gameplay (not simulations)
+      if (!gameState.isSimulation) {
+        await new Promise((resolve) => setTimeout(resolve, AI_PAUSE_DURATION_MS))
+      }
       continue
     } else {
       // Human: wait for manual pick

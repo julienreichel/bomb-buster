@@ -14,6 +14,7 @@ export default class GameState {
     phase = null,
     pickedCards = [],
     autoStart = false,
+    isSimulation = true,
   }) {
     this.players = players // Array of Player
     this.wires = wires // Array of WireTile
@@ -27,6 +28,7 @@ export default class GameState {
     this.phase = phase
     this.pickedCards = pickedCards
     this.autoStart = autoStart
+    this.isSimulation = isSimulation // True for simulations, false for regular gameplay
     this.currentPicker = null // Index of current player picking a card (null if none)
   }
   // --- Wire deduction helpers ---

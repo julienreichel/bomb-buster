@@ -62,27 +62,25 @@ describe('useGameStateManager composable', () => {
   })
 
   it('should only allow 3 to 5 players', () => {
-    // 2 players: should throw or clamp to 3
     expect(() => gameStateManager.createNewGame({ numPlayers: 2 })).toThrow()
-    // 6 players: should throw or clamp to 5
     expect(() => gameStateManager.createNewGame({ numPlayers: 6 })).toThrow()
-    // 3, 4, 5 players: should work
+    // Should not throw for valid counts
     expect(() => gameStateManager.createNewGame({ numPlayers: 3 })).not.toThrow()
     expect(() => gameStateManager.createNewGame({ numPlayers: 4 })).not.toThrow()
     expect(() => gameStateManager.createNewGame({ numPlayers: 5 })).not.toThrow()
   })
   describe('startPickRound, advancePickRound', () => {
-    it('startPickRound sets phase and currentPicker, and advances AI picks', () => {
+    it('startPickRound sets phase and currentPicker, and advances AI picks', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
-      gameStateManager.startPickRound()
+      await gameStateManager.startPickRound()
       // All AI, so should immediately advance to play-phase
       expect(gameStateManager.state.phase).toBe('play-phase')
       expect(gameStateManager.state.currentPicker).toBe(null)
     })
 
-    it('startPickRound waits for human to pick before advancing', () => {
+    it('startPickRound waits for human to pick before advancing', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: true })
-      gameStateManager.startPickRound()
+      await gameStateManager.startPickRound()
       // Should be in pick-card phase, and currentPicker should be the human
       expect(gameStateManager.state.phase).toBe('pick-card')
       const humanIndex = gameStateManager.state.players.findIndex((p) => !p.isAI)
@@ -91,18 +89,18 @@ describe('useGameStateManager composable', () => {
       const human = gameStateManager.state.players[humanIndex]
       const cardToPick = human.hand.find((card) => card.color === 'blue')
       human.pickCard(cardToPick)
-      gameStateManager.advancePickRound()
+      await gameStateManager.advancePickRound()
       // After human picks, should advance to play-phase
       expect(gameStateManager.state.phase).toBe('play-phase')
       expect(gameStateManager.state.currentPicker).toBe(null)
     })
 
-    it('advancePickRound advances to next player and switches to play-phase at end', () => {
+    it('advancePickRound advances to next player and switches to play-phase at end', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
       // Manually set up for pick round
       gameStateManager.state.phase = 'pick-card'
       gameStateManager.state.currentPicker = 1
-      gameStateManager.advancePickRound()
+      await gameStateManager.advancePickRound()
       // Should finish with play-phase
       expect(gameStateManager.state.phase).toBe('play-phase')
       expect(gameStateManager.state.currentPicker).toBe(null)
@@ -481,7 +479,7 @@ describe('useGameStateManager composable', () => {
     })
   })
   describe('advancePlayRound', () => {
-    it('should stop and wait for human pick if a player is human', () => {
+    it('should stop and wait for human pick if a player is human', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: true })
 
       // Give each player 1 blue card, player 2 gets 2
@@ -507,13 +505,13 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.detonatorDial = 3
       gameStateManager.state.phase = 'play-phase'
 
-      gameStateManager.advancePlayRound()
+      await gameStateManager.advancePlayRound()
       // Should be waiting for human pick
       expect(gameStateManager.state.phase).toBe('play-phase')
       expect(gameStateManager.state.currentPicker).toBe(0)
 
       // resume other players
-      gameStateManager.advancePlayRound()
+      await gameStateManager.advancePlayRound()
 
       // All cards should be revealed
       expect(gameStateManager.state.players.every((p) => p.hand.every((c) => c.revealed))).toBe(
@@ -521,7 +519,7 @@ describe('useGameStateManager composable', () => {
       )
       expect(gameStateManager.state.phase).toBe('game-over')
     })
-    it('should advance through AI players and end game when all cards are revealed', () => {
+    it('should advance through AI players and end game when all cards are revealed', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
       // Player 0: 1 blue card, Player 1: 1 blue card, Player 2: 2 blue cards
       gameStateManager.state.players[0].hand = [{ id: 'b0', color: 'blue', number: 1 }]
@@ -546,7 +544,7 @@ describe('useGameStateManager composable', () => {
       })
       // Player 2 will never pick (game ends before their turn)
       gameStateManager.state.players[2].pickPlayCards = () => null
-      gameStateManager.advancePlayRound()
+      await gameStateManager.advancePlayRound()
       // All cards should be revealed
       expect(gameStateManager.state.players.every((p) => p.hand.every((c) => c.revealed))).toBe(
         true,
@@ -554,7 +552,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.phase).toBe('game-over')
     })
 
-    it('should end game if detonatorDial reaches 0', () => {
+    it('should end game if detonatorDial reaches 0', async () => {
       gameStateManager.createNewGame({ numPlayers: 3, hasHuman: false })
       // Give each player 1 blue card and 1 red card
       gameStateManager.state.players.forEach((p, i) => {
@@ -576,7 +574,7 @@ describe('useGameStateManager composable', () => {
           }
         }
       })
-      gameStateManager.advancePlayRound()
+      await gameStateManager.advancePlayRound()
       expect(gameStateManager.state.detonatorDial).toBe(0)
       expect(gameStateManager.state.phase).toBe('game-over')
     })

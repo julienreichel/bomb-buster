@@ -177,6 +177,7 @@ function runSimulations() {
         yellow: { created: yellowCreated.value, onBoard: yellowOnBoard.value },
         red: { created: redCreated.value, onBoard: redOnBoard.value },
         autoStart: true,
+        isSimulation: true, // This is a simulation, no AI pauses needed
       })
 
       const dial = manager.state.detonatorDial

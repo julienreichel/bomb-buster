@@ -209,16 +209,16 @@ function handlePlayerDeckPick(card) {
   }
 }
 
-function handleHumanPick(card) {
+async function handleHumanPick(card) {
   const player = players.value[props.selectedPlayerIdx]
   if (player && player.pickCard) {
     if (player.pickCard(card) !== null) {
-      advancePickRound()
+      await advancePickRound()
     }
   }
 }
 
-function handleHumanPlayPick(card, playerId) {
+async function handleHumanPlayPick(card, playerId) {
   if (!isHumanTurn.value) return
 
   // Step 1: pick own card as source
@@ -276,7 +276,7 @@ function handleHumanPlayPick(card, playerId) {
       }
 
       // Valid double detector play, execute and advance
-      advancePlayRound()
+      await advancePlayRound()
       resetPlaySelection()
       return
     }
@@ -299,7 +299,7 @@ function handleHumanPlayPick(card, playerId) {
   }
 
   // Valid play, execute and advance
-  advancePlayRound()
+  await advancePlayRound()
   resetPlaySelection()
 }
 
