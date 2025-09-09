@@ -119,7 +119,7 @@ describe('useGameStateManager composable', () => {
       gameStateManager.state.detonatorDial = 3
     })
 
-    it('red: player has 2 red cards, picks one as source, both are revealed', () => {
+    it('should reveal both red cards when player picks red card and has second red card', () => {
       // Setup: player 0 has 2 red cards, both not revealed
       const redA = new WireTile({ id: 'rA', color: 'red', number: 7.5 })
       const redB = new WireTile({ id: 'rB', color: 'red', number: 8.5 })
@@ -143,7 +143,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('red: player has a red card, cannot pick it, because blue is not revealed', () => {
+    it('should reject red card selection when required blue cards are not yet revealed', () => {
       // Setup: player 0 has 1 red card, not revealed
       const redA = { id: 'rA', color: 'red', number: 7.5 }
       const blueA = { id: 'bA', color: 'blue', number: 5 }
@@ -159,7 +159,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.history.length).toBe(historyLength)
     })
 
-    it('blue: player has 4 cards with same value, picks two from self, all are revealed', () => {
+    it('should reveal all matching blue cards when player owns all four cards of same value', () => {
       // Setup: player 0 has 4 blue 5s
       const blueA = { id: 'bA', color: 'blue', number: 5 }
       const blueB = { id: 'bB', color: 'blue', number: 5 }
@@ -189,7 +189,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('blue: player has 3 cards, 4th in another player and both are revealed, pick is valid', () => {
+    it('should allow valid cross-player blue match when both target cards are already revealed', () => {
       // Setup: player 0 has 3 blue 7s, player 1 has 1 blue 7 (revealed)
       const blueA = { id: 'bA', color: 'blue', number: 7 }
       const blueB = { id: 'bB', color: 'blue', number: 7 }
@@ -219,7 +219,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('blue: player has 3 cards, 4th in another player and not revealed, pick is invalid', () => {
+    it('should reject cross-player blue match when target card in other player is not revealed', () => {
       // Setup: player 0 has 3 blue 8s, player 1 has 1 blue 8 (not revealed)
       const blueA = { id: 'bA', color: 'blue', number: 8 }
       const blueB = { id: 'bB', color: 'blue', number: 8 }
@@ -243,7 +243,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.history.length).toBe(historyLength)
     })
 
-    it('pick two different cards in the same player is invalid', () => {
+    it('should reject selection when trying to pick two different card values from same player', () => {
       const blueA = { id: 'bA', color: 'blue', number: 7 }
       const blueB = { id: 'bB', color: 'blue', number: 8 }
       const blueC = { id: 'bC', color: 'blue', number: 8 }
@@ -287,7 +287,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('yellow: player has 2 yellow cards, 4 yellow cards in game, slef pick is invalid', () => {
+    it('should reject self-pick when player has yellow cards but other yellow cards exist elsewhere', () => {
       // Setup: player 0 has 2 yellow cards, 2 other yellow cards in other players (not revealed)
       const yellowA = { id: 'yA', color: 'yellow', number: 1.1 }
       const yellowB = { id: 'yB', color: 'yellow', number: 2.1 }
@@ -338,7 +338,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('miss decreases detonatorDial and sets infoToken', () => {
+    it('should decrease detonator countdown and mark source card when no match is found', () => {
       const blueA = new WireTile({ id: 'bA', color: 'blue', number: 1 })
       const blueB = new WireTile({ id: 'bB', color: 'blue', number: 2 })
       gameStateManager.state.players[0].hand = [blueA]
@@ -366,7 +366,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.players[0].knownWires).toEqual([blueA])
     })
 
-    it('blue match reveals both cards', () => {
+    it('should reveal both matching blue cards when successful match is made', () => {
       const blueA = new WireTile({ id: 'bA', color: 'blue', number: 5 })
       const blueB = new WireTile({ id: 'bB', color: 'blue', number: 5 })
       gameStateManager.state.players[0].hand = [blueA]
@@ -392,7 +392,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('reset known card if picking the card', () => {
+    it('should clear known card information when the known card is directly selected', () => {
       const blueA = { id: 'bA', color: 'blue', number: 5 }
       const blueB = { id: 'bB', color: 'blue', number: 5 }
       gameStateManager.state.players[0].hand = [blueA]
@@ -408,7 +408,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.players[0].knownWires).toEqual([])
     })
 
-    it('reset known card if picking the same value but different card', () => {
+    it('should clear known card information when picking different card with same value', () => {
       const blueA = new WireTile({ id: 'bA', color: 'blue', number: 5, revealed: false })
       const blueB = new WireTile({ id: 'bB', color: 'blue', number: 5, revealed: false })
       const blueC = new WireTile({ id: 'bC', color: 'blue', number: 5, revealed: false })
@@ -427,7 +427,7 @@ describe('useGameStateManager composable', () => {
       expect(gameStateManager.state.players[0].knownWires).toEqual([])
     })
 
-    it('yellow match reveals both cards', () => {
+    it('should reveal both matching yellow cards when successful yellow match is made', () => {
       const yellowA = new WireTile({ id: 'yA', color: 'yellow', number: 1.1 })
       const yellowB = new WireTile({ id: 'yB', color: 'yellow', number: 2.1 })
       gameStateManager.state.players[0].hand = [yellowA]
@@ -452,7 +452,7 @@ describe('useGameStateManager composable', () => {
       })
     })
 
-    it('red target sets detonatorDial to 0 and reveals red', () => {
+    it('should trigger immediate game failure when red card is targeted and detonator reaches zero', () => {
       const blueA = new WireTile({ id: 'bA', color: 'blue', number: 3 })
       const redB = new WireTile({ id: 'rB', color: 'red', number: 7.5 })
       gameStateManager.state.players[0].hand = [blueA]
@@ -604,7 +604,7 @@ describe('useGameStateManager composable', () => {
       expect(result.outcome).toBe('invalid-pick')
     })
 
-    it('should work normally when not using double detector', () => {
+    it('should process standard card selection when double detector is not activated', () => {
       gameStateManager.createNewGame({ numPlayers: 3 })
       const player = gameStateManager.state.players[0]
 
@@ -721,7 +721,7 @@ describe('useGameStateManager composable', () => {
       expect(sourcePlayer.knownWires).toContain(sourcePlayer.hand[0])
     })
 
-    it('double detector with yellow source: should work with yellow targets', () => {
+    it('should successfully reveal matching yellow cards when yellow source targets other players', () => {
       gameStateManager.createNewGame({ numPlayers: 3 })
       const sourcePlayer = gameStateManager.state.players[0]
       const targetPlayer = gameStateManager.state.players[1]

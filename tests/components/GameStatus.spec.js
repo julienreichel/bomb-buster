@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import GameStatus from '../../src/components/GameStatus.vue'
 
 describe('GameStatus Component', () => {
@@ -13,7 +13,7 @@ describe('GameStatus Component', () => {
     detonatorDial: 5,
   }
 
-  it('renders WireTracker component with correct props from state', () => {
+  it('should display wire tracker with current yellow and red wire counts from game state', () => {
     const wrapper = mount(GameStatus, {
       props: { state: defaultState },
       global: {
@@ -31,7 +31,7 @@ describe('GameStatus Component', () => {
     expect(wireTracker.props('redWires')).toEqual(defaultState.redWires)
   })
 
-  it('renders DetonatorDial component with correct props from state', () => {
+  it('should display detonator dial with current countdown value from game state', () => {
     const wrapper = mount(GameStatus, {
       props: { state: defaultState },
       global: {
@@ -67,7 +67,7 @@ describe('GameStatus Component', () => {
     expect(detonatorDial.props('value')).toBe(0)
   })
 
-  it('updates child components when state changes', async () => {
+  it('should refresh wire tracker and detonator dial when game state is modified', async () => {
     const wrapper = mount(GameStatus, {
       props: { state: defaultState },
       global: {

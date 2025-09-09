@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import WireCard from '../../src/components/WireCard.vue'
 import WireTile from '../../src/composables/models/WireTile.js'
@@ -11,7 +11,7 @@ describe('WireCard Component', () => {
     mockCard = new WireTile({ id: 1, color: 'blue', number: 5 })
   })
 
-  test('renders card with hidden content by default', async () => {
+  test('should hide card number and show help icon when card is not visible or revealed', async () => {
     const { container } = render(
       WireCard,
       withQuasar({
@@ -29,7 +29,7 @@ describe('WireCard Component', () => {
     expect(hasContent).toBe(true)
   })
 
-  test('renders card content when visible', async () => {
+  test('should display card number when visible prop is set to true', async () => {
     const { container } = render(
       WireCard,
       withQuasar({
@@ -44,7 +44,7 @@ describe('WireCard Component', () => {
     expect(container.textContent).toContain('5')
   })
 
-  test('renders card content when revealed', async () => {
+  test('should display card number when card revealed property is true', async () => {
     mockCard.revealed = true
     const { container } = render(
       WireCard,
@@ -57,7 +57,7 @@ describe('WireCard Component', () => {
     expect(container.textContent).toContain('5')
   })
 
-  test('renders info token content for blue cards', async () => {
+  test('should display info token indicator for blue cards with info tokens', async () => {
     mockCard.infoToken = true
     const { container } = render(
       WireCard,
@@ -70,7 +70,7 @@ describe('WireCard Component', () => {
     expect(container.textContent).toContain('5')
   })
 
-  test('renders info token content for colored cards', async () => {
+  test('should display color name for non-blue cards with info tokens', async () => {
     const yellowCard = new WireTile({ id: 2, color: 'yellow', number: 3.1 })
     yellowCard.infoToken = true
     const { container } = render(
@@ -84,7 +84,7 @@ describe('WireCard Component', () => {
     expect(container.textContent).toContain('yellow')
   })
 
-  test('emits pick event when selectable card is clicked', async () => {
+  test('should emit pick event when user clicks on selectable card', async () => {
     const { container, emitted } = render(
       WireCard,
       withQuasar({

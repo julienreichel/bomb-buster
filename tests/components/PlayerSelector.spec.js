@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import PlayerSelector from '../../src/components/PlayerSelector.vue'
 import { withQuasar } from '../test-utils.js'
 
@@ -47,7 +47,7 @@ describe('PlayerSelector Component', () => {
     expect(buttons[2].classes()).not.toContain('bg-primary')
   })
 
-  it('emits update:selectedPlayerIdx when a button is clicked', async () => {
+  it('should notify parent component when user clicks on a player selection button', async () => {
     const wrapper = mount(
       PlayerSelector,
       withQuasar({
@@ -62,7 +62,7 @@ describe('PlayerSelector Component', () => {
     expect(wrapper.emitted()['update:selectedPlayerIdx'][0]).toEqual([2])
   })
 
-  it('renders with empty players array', () => {
+  it('should display empty component state when no players are provided in array', () => {
     const wrapper = mount(
       PlayerSelector,
       withQuasar({
@@ -99,7 +99,7 @@ describe('PlayerSelector Component', () => {
     expect(buttons[2].text()).toBe('Charlie')
   })
 
-  it('emits correct index for each player button', async () => {
+  it('should send corresponding player index when different player buttons are clicked', async () => {
     const wrapper = mount(
       PlayerSelector,
       withQuasar({
@@ -122,7 +122,7 @@ describe('PlayerSelector Component', () => {
     expect(wrapper.emitted()['update:selectedPlayerIdx'][2]).toEqual([2])
   })
 
-  it('updates visual state when selectedPlayerIdx prop changes', async () => {
+  it('should highlight different player button when selectedPlayerIdx prop changes', async () => {
     const wrapper = mount(
       PlayerSelector,
       withQuasar({

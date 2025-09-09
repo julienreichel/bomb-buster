@@ -1,4 +1,4 @@
-import { expect, test, describe, beforeEach } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import { render } from 'vitest-browser-vue'
 import WireTracker from '../../src/components/WireTracker.vue'
 import WireTile from '../../src/composables/models/WireTile.js'
@@ -16,7 +16,7 @@ describe('WireTracker Component', () => {
     ]
   })
 
-  test('renders all 12 number badges', async () => {
+  test('should display numbered badges from 1 to 12 for tracking wire completion', async () => {
     const { container } = render(
       WireTracker,
       withQuasar({
@@ -30,7 +30,7 @@ describe('WireTracker Component', () => {
     }
   })
 
-  test('shows correct blue wire states based on revealed count', async () => {
+  test('should apply correct visual state classes based on number of blue wires revealed', async () => {
     // Set some blue wires as revealed
     mockWires[0].revealed = true // blue 1 - 1/2 revealed
     mockWires[1].revealed = true // blue 1 - 2/2 revealed
@@ -54,7 +54,7 @@ describe('WireTracker Component', () => {
     expect(numberTwoBadges.length).toBeGreaterThan(0)
   })
 
-  test('displays yellow wire indicators', async () => {
+  test('should display yellow wire indicators with appropriate visual styling', async () => {
     const yellowWires = [
       new WireTile({ id: 5, color: 'yellow', number: 3.1 }),
       new WireTile({ id: 6, color: 'yellow', number: 5.1 }),

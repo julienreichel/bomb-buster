@@ -34,7 +34,7 @@ describe('Player composable', () => {
       expect(ai.hand[1].infoToken).toBe(false)
     })
 
-    it('AIPlayer pickCard returns null if no blue card', async () => {
+    it('should return null when AI player has no blue cards available for selection', async () => {
       const ai = new AIPlayer({
         id: 1,
         name: 'AI',
@@ -45,7 +45,7 @@ describe('Player composable', () => {
       expect(idx).toBe(null)
     })
 
-    it('AIPlayer pickCard pick best cards', async () => {
+    it('should select the highest priority blue card using strategic algorithm', async () => {
       const ai = new AIPlayer({
         id: 1,
         name: 'AI',
@@ -158,7 +158,7 @@ describe('Player composable', () => {
   })
 
   describe('pickPlayCards', () => {
-    it('picks two matching cards when 4 cards are present', () => {
+    it('should select two cards with same value when player has all four matching cards available', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',
@@ -304,7 +304,7 @@ describe('Player composable', () => {
       expect(result.sourcePlayerIdx).toBe(0)
     })
 
-    it('AIPlayer picks matching card if another player has infoToken', () => {
+    it('should target cards from other players when they have info tokens revealing card values', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',
@@ -332,7 +332,7 @@ describe('Player composable', () => {
       expect(result.targetCardId).toBe('b8')
     })
 
-    it('AIPlayer picks matching card if no other choices are left', () => {
+    it('should choose matching cards as last resort when no better strategic options exist', () => {
       const ai = new AIPlayer({
         id: 0,
         name: 'AI',

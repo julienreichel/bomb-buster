@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import WireTile from '../../src/composables/models/WireTile.js'
 
 describe('WireTile composable', () => {
@@ -54,7 +54,7 @@ describe('WireTile composable', () => {
   })
 
   describe('isColor method', () => {
-    it('should return true for matching color', () => {
+    it('should correctly identify when two cards have same color for matching logic', () => {
       const blueCard = new WireTile({ id: 'test', color: 'blue', number: 5 })
       const yellowCard = new WireTile({ id: 'test', color: 'yellow', number: 1.1 })
       const redCard = new WireTile({ id: 'test', color: 'red', number: 1.5 })
@@ -64,7 +64,7 @@ describe('WireTile composable', () => {
       expect(redCard.isColor('red')).toBe(true)
     })
 
-    it('should return false for non-matching color', () => {
+    it('should correctly identify when two cards have different colors for matching logic', () => {
       const blueCard = new WireTile({ id: 'test', color: 'blue', number: 5 })
 
       expect(blueCard.isColor('yellow')).toBe(false)

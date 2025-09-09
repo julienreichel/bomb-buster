@@ -1,10 +1,10 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import LoadingState from '../../src/components/LoadingState.vue'
 import { withQuasar } from '../test-utils.js'
 
 describe('LoadingState Component', () => {
-  it('renders loading spinner with correct props', () => {
+  it('should display centered spinner with size large and orange color', () => {
     const wrapper = mount(LoadingState, withQuasar({}))
 
     const spinner = wrapper.findComponent({ name: 'QSpinner' })
@@ -13,7 +13,7 @@ describe('LoadingState Component', () => {
     expect(spinner.props('size')).toBe('3em')
   })
 
-  it('displays default loading message', () => {
+  it('should show standard "Loading game..." message when no custom message provided', () => {
     const wrapper = mount(LoadingState, withQuasar({}))
 
     const messageDiv = wrapper.find('.q-ml-md')
@@ -21,7 +21,7 @@ describe('LoadingState Component', () => {
     expect(messageDiv.text()).toBe('Loading...')
   })
 
-  it('displays custom message when provided', () => {
+  it('should display custom loading message when message prop is provided', () => {
     const customMessage = 'Initializing game...'
     const wrapper = mount(
       LoadingState,
@@ -36,7 +36,7 @@ describe('LoadingState Component', () => {
     expect(messageDiv.text()).toBe(customMessage)
   })
 
-  it('updates message when prop changes', async () => {
+  it('should dynamically change displayed text when message prop is updated', async () => {
     const wrapper = mount(
       LoadingState,
       withQuasar({
@@ -55,7 +55,7 @@ describe('LoadingState Component', () => {
     expect(messageDiv.text()).toBe('Updated message')
   })
 
-  it('has correct container structure and classes', () => {
+  it('should apply appropriate CSS classes and container structure for loading display', () => {
     const wrapper = mount(LoadingState, withQuasar({}))
 
     const container = wrapper.find('.q-pa-xl.flex.flex-center')
@@ -69,7 +69,7 @@ describe('LoadingState Component', () => {
     expect(message.exists()).toBe(true)
   })
 
-  it('handles empty message string', () => {
+  it('should display fallback content when message prop is empty string', () => {
     const wrapper = mount(
       LoadingState,
       withQuasar({
@@ -84,7 +84,7 @@ describe('LoadingState Component', () => {
     expect(messageDiv.exists()).toBe(true) // Div should still exist, just empty
   })
 
-  it('handles long message text', () => {
+  it('should properly display and format very long loading message text without breaking layout', () => {
     const longMessage =
       'This is a very long loading message that might wrap to multiple lines in the UI'
     const wrapper = mount(

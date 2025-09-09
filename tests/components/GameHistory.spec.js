@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import GameHistory from '../../src/components/GameHistory.vue'
 import { withQuasar } from '../test-utils.js'
 
@@ -65,7 +65,7 @@ describe('GameHistory Component', () => {
     expect(wrapper.text()).toContain("Alice played b5 vs Bob's b7 → match [dial: 5]")
   })
 
-  it('formats move summaries with different outcomes', () => {
+  it('should display move descriptions with appropriate formatting for different game outcomes', () => {
     const moves = [
       createMockMove({
         sourcePlayerIdx: 0,

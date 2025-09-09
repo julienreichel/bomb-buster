@@ -428,7 +428,7 @@ describe('GameSetupHelpers', () => {
       ).toBe(true)
     })
 
-    it('should call advancePlayRound when autoStart is true (regression test)', async () => {
+    it('should call advancePlayRound function when autoStart flag is enabled (regression test)', async () => {
       // This test specifically checks the regression where the autoStart branch was missing
       const autoStartGameState = new GameState({
         players: gameState.players,

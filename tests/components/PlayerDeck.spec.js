@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import PlayerDeck from '../../src/components/PlayerDeck.vue'
 import WireCard from '../../src/components/WireCard.vue'
 import { HumanPlayer } from '../../src/composables/models/Player.js'
@@ -22,7 +22,7 @@ describe('PlayerDeck Component', () => {
     return wire
   }
 
-  it('renders player deck with player name', async () => {
+  it('should display player name in header and render wire cards for each card in hand', async () => {
     const player = createTestPlayer('John Doe')
     const wrapper = mount(
       PlayerDeck,
@@ -39,7 +39,7 @@ describe('PlayerDeck Component', () => {
     expect(cardSection.exists()).toBe(true)
   })
 
-  it('renders with default player name when no name provided', async () => {
+  it('should fall back to generic player name when player name is not provided', async () => {
     const player = createTestPlayer('')
     const wrapper = mount(
       PlayerDeck,
@@ -51,7 +51,7 @@ describe('PlayerDeck Component', () => {
     expect(wrapper.text()).toContain("Player's Hand")
   })
 
-  it('renders correct number of wire cards for player hand', async () => {
+  it('should create wire card component for each card in player hand', async () => {
     const cards = [
       createTestWire(1, 'blue', 5),
       createTestWire(2, 'yellow'),
@@ -76,7 +76,7 @@ describe('PlayerDeck Component', () => {
     expect(wireCards[2].props('card')).toStrictEqual(cards[2])
   })
 
-  it('passes all props correctly to wire cards', async () => {
+  it('should provide correct card properties and selection state to each wire card component', async () => {
     const cards = [createTestWire(1, 'blue', 5)]
     const player = createTestPlayer('Test Player', cards)
     const candidates = [new Set(['blue', 'yellow'])]
@@ -119,7 +119,7 @@ describe('PlayerDeck Component', () => {
     expect(wireCard.props('candidates')).toBeUndefined()
   })
 
-  it('delegates pick events from wire cards', async () => {
+  it('should forward card selection events from wire cards to parent component', async () => {
     const cards = [createTestWire(1, 'blue', 5)]
     const player = createTestPlayer('Test Player', cards)
 
@@ -157,7 +157,7 @@ describe('PlayerDeck Component', () => {
     expect(wrapper.text()).toContain('5, Yellow, Red')
   })
 
-  it('formats known wires correctly', async () => {
+  it('should display known wire information in readable format with colors and numbers', async () => {
     const player = createTestPlayer('Test Player')
     player.knownWires = [
       createTestWire(1, 'blue', 5),
@@ -177,7 +177,7 @@ describe('PlayerDeck Component', () => {
     expect(wrapper.text()).toContain('5, 12, Yellow, Red')
   })
 
-  it('hides known wires section when player has no known wires', async () => {
+  it('should not display known wires section when player has no cards with known information', async () => {
     const player = createTestPlayer('Test Player')
     player.knownWires = []
 
@@ -238,7 +238,7 @@ describe('PlayerDeck Component', () => {
   })
 
   describe('Double Detector Indicator', () => {
-    it('shows double detector chip for AI player with double detector', async () => {
+    it('should display double detector chip indicator when AI player has double detector equipment', async () => {
       const { AIPlayer } = await import('../../src/composables/models/Player.js')
       const player = new AIPlayer({ id: 1, name: 'AI Player', doubleDetectorEnabled: true })
 
@@ -252,7 +252,7 @@ describe('PlayerDeck Component', () => {
       expect(wrapper.text()).toContain('Double Detector')
     })
 
-    it('shows no double detector chip for AI player without double detector', async () => {
+    it('should not display double detector indicator when AI player lacks double detector equipment', async () => {
       const { AIPlayer } = await import('../../src/composables/models/Player.js')
       const player = new AIPlayer({ id: 1, name: 'AI Player', doubleDetectorEnabled: false })
 
@@ -266,7 +266,7 @@ describe('PlayerDeck Component', () => {
       expect(wrapper.text()).toContain('No Double Detector')
     })
 
-    it('does not show double detector chip for human players', async () => {
+    it('should hide double detector chip for human players regardless of equipment status', async () => {
       const player = createTestPlayer('Human Player')
 
       const wrapper = mount(

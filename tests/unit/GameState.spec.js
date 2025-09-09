@@ -3,7 +3,7 @@ import GameState from '../../src/composables/models/GameState.js'
 
 describe('GameState composable', () => {
   describe('nearestKnownLeft, nearestKnownRight', () => {
-    it('nearestKnownLeft and nearestKnownRight work as expected', () => {
+    it('should correctly identify nearest known cards on left and right sides of position', () => {
       const player = {
         hand: [
           { id: 1, color: 'blue', number: 2 },
@@ -407,7 +407,7 @@ describe('GameState composable', () => {
     })
   })
   describe('monteCarloSlotProbabilities', () => {
-    it('returns correct result for simple blue slots', () => {
+    it('should calculate valid card candidates for straightforward blue wire scenarios', () => {
       const player = {
         id: 1,
         hand: [
@@ -442,7 +442,7 @@ describe('GameState composable', () => {
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
-    it('returns correct result for case with yellow cards', () => {
+    it('should calculate valid card candidates when yellow cards are present in game', () => {
       const yellow1 = { id: 2, color: 'yellow', number: 2.1 }
       const player = {
         id: 1,
@@ -474,7 +474,7 @@ describe('GameState composable', () => {
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
-    it('returns correct result for case with 2 possible yellow cards', () => {
+    it('should calculate valid card candidates when multiple yellow cards create complex scenarios', () => {
       const yellow1 = { id: 2, color: 'yellow', number: 2.1 }
       const yellow2 = { id: 3, color: 'yellow', number: 3.1 }
       const player = {
@@ -506,7 +506,7 @@ describe('GameState composable', () => {
       expect(res[2].slots[0].probability).toEqual(1)
     })
 
-    it('returns correct result for case with red cards', () => {
+    it('should calculate valid card candidates when dangerous red cards are present', () => {
       const red1 = { id: 2, color: 'red', number: 2.5 }
       const player = {
         id: 1,

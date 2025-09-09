@@ -1,5 +1,5 @@
-import { describe, it, expect } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { describe, expect, it } from 'vitest'
 import DetonatorDial from '../../src/components/DetonatorDial.vue'
 import { withQuasar } from '../test-utils.js'
 
@@ -93,7 +93,7 @@ describe('DetonatorDial Component', () => {
     expect(badge.props('textColor')).toBe('white')
   })
 
-  it('updates display when value prop changes', async () => {
+  it('should change color and state display when detonator value prop changes', async () => {
     const wrapper = mount(
       DetonatorDial,
       withQuasar({
