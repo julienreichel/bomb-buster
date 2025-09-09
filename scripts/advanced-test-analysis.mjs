@@ -43,6 +43,12 @@ class TestQualityAnalyzer {
     console.log('👃 Test Smell Detection')
     console.log('----------------------')
 
+    // Quality thresholds
+    const EXCESSIVE_SETUP_LINES = 10
+    const MAX_ASSERTIONS_PER_TEST = 5
+    const MAX_TEST_LINES = 20
+    const ACCEPTABLE_SMELL_COUNT = 5
+
     const smells = {
       'Excessive Setup': 0,
       'Magic Numbers': 0,
@@ -54,12 +60,11 @@ class TestQualityAnalyzer {
 
     this.testFiles.forEach((filePath) => {
       const content = fs.readFileSync(filePath, 'utf8')
-      const lines = content.split('\n')
 
       // Detect excessive setup (beforeEach with many lines)
       const beforeEachMatches = content.match(/beforeEach\s*\([^}]+\}/g) || []
       beforeEachMatches.forEach((match) => {
-        if (match.split('\n').length > 10) {
+        if (match.split('\n').length > EXCESSIVE_SETUP_LINES) {
           smells['Excessive Setup']++
         }
       })
@@ -72,14 +77,14 @@ class TestQualityAnalyzer {
       const testBlocks = content.match(/it\([^}]+\}(\s*\))?/g) || []
       testBlocks.forEach((block) => {
         const assertions = (block.match(/expect\(/g) || []).length
-        if (assertions > 5) {
+        if (assertions > MAX_ASSERTIONS_PER_TEST) {
           smells['Assertion Roulette']++
         }
       })
 
       // Detect long test methods
       testBlocks.forEach((block) => {
-        if (block.split('\n').length > 20) {
+        if (block.split('\n').length > MAX_TEST_LINES) {
           smells['Long Test Methods']++
         }
       })
@@ -90,7 +95,14 @@ class TestQualityAnalyzer {
     })
 
     Object.entries(smells).forEach(([smell, count]) => {
-      const status = count === 0 ? '✅' : count < 5 ? '⚠️' : '❌'
+      let status
+      if (count === 0) {
+        status = '✅'
+      } else if (count < ACCEPTABLE_SMELL_COUNT) {
+        status = '⚠️'
+      } else {
+        status = '❌'
+      }
       console.log(`${status} ${smell}: ${count}`)
     })
 
@@ -154,6 +166,9 @@ class TestQualityAnalyzer {
     console.log('🧮 Test Complexity Analysis')
     console.log('---------------------------')
 
+    // Complexity thresholds
+    const HIGH_COMPLEXITY_THRESHOLD = 20
+
     let totalCyclomaticComplexity = 0
     let maxComplexity = 0
     const complexTests = []
@@ -172,7 +187,7 @@ class TestQualityAnalyzer {
         maxComplexity = fileComplexity
       }
 
-      if (fileComplexity > 20) {
+      if (fileComplexity > HIGH_COMPLEXITY_THRESHOLD) {
         complexTests.push({ file: path.basename(filePath), complexity: fileComplexity })
       }
     })
@@ -205,34 +220,46 @@ class TestQualityAnalyzer {
     console.log('📊 Test Quality Summary')
     console.log('======================')
 
+    // Quality score thresholds
+    const EXCELLENT_SCORE = 90
+    const GOOD_SCORE = 80
+    const FAIR_SCORE = 70
+    const POOR_SCORE = 60
+    const HIGH_COMPLEXITY_AVERAGE = 15
+    const MAJOR_SMELL_PENALTY = 10
+    const MINOR_SMELL_PENALTY = 5
+    const SMALL_SMELL_PENALTY = 2
+    const PATTERN_BONUS = 5
+    const MAX_COMPLEXITY_FILES = 3
+
     let score = 100
 
     // Deduct points for test smells
-    Object.entries(this.metrics.testSmells).forEach(([smell, count]) => {
-      if (count > 10) score -= 10
-      else if (count > 5) score -= 5
-      else if (count > 0) score -= 2
+    Object.entries(this.metrics.testSmells).forEach(([_smell, count]) => {
+      if (count > MAJOR_SMELL_PENALTY) score -= MAJOR_SMELL_PENALTY
+      else if (count > MINOR_SMELL_PENALTY) score -= MINOR_SMELL_PENALTY
+      else if (count > 0) score -= SMALL_SMELL_PENALTY
     })
 
     // Add points for good patterns
-    if (this.metrics.patterns['AAA Pattern'] > 0) score += 5
-    if (this.metrics.patterns['Given-When-Then'] > 0) score += 5
+    if (this.metrics.patterns['AAA Pattern'] > 0) score += PATTERN_BONUS
+    if (this.metrics.patterns['Given-When-Then'] > 0) score += PATTERN_BONUS
 
     // Deduct for high complexity
-    if (this.metrics.complexity.average > 15) score -= 10
-    if (this.metrics.complexity.complexFiles > 3) score -= 10
+    if (this.metrics.complexity.average > HIGH_COMPLEXITY_AVERAGE) score -= MAJOR_SMELL_PENALTY
+    if (this.metrics.complexity.complexFiles > MAX_COMPLEXITY_FILES) score -= MAJOR_SMELL_PENALTY
 
     score = Math.max(0, Math.min(100, score))
 
     console.log(`\n🎯 Advanced Quality Score: ${score}/100`)
 
-    if (score >= 90) {
+    if (score >= EXCELLENT_SCORE) {
       console.log('🏆 Outstanding test quality!')
-    } else if (score >= 80) {
+    } else if (score >= GOOD_SCORE) {
       console.log('✅ Excellent test quality!')
-    } else if (score >= 70) {
+    } else if (score >= FAIR_SCORE) {
       console.log('👍 Good test quality')
-    } else if (score >= 60) {
+    } else if (score >= POOR_SCORE) {
       console.log('⚠️ Moderate test quality')
     } else {
       console.log('❌ Poor test quality')
@@ -245,13 +272,18 @@ class TestQualityAnalyzer {
     console.log('\n💡 Advanced Recommendations:')
     console.log('============================')
 
+    // Recommendation thresholds
+    const HIGH_MAGIC_NUMBER_COUNT = 20
+    const HIGH_CONDITIONAL_LOGIC_COUNT = 5
+    const HIGH_AVERAGE_COMPLEXITY = 10
+
     const smells = this.metrics.testSmells
 
     if (smells['Excessive Setup'] > 0) {
       console.log('• Refactor beforeEach blocks - consider test data builders')
     }
 
-    if (smells['Magic Numbers'] > 20) {
+    if (smells['Magic Numbers'] > HIGH_MAGIC_NUMBER_COUNT) {
       console.log('• Replace magic numbers with named constants')
     }
 
@@ -263,7 +295,7 @@ class TestQualityAnalyzer {
       console.log('• Break down long tests into smaller, focused tests')
     }
 
-    if (smells['Conditional Test Logic'] > 5) {
+    if (smells['Conditional Test Logic'] > HIGH_CONDITIONAL_LOGIC_COUNT) {
       console.log('• Remove conditional logic from tests - create separate test cases')
     }
 
@@ -271,7 +303,7 @@ class TestQualityAnalyzer {
       console.log('• Consider using AAA (Arrange-Act-Assert) pattern for clarity')
     }
 
-    if (this.metrics.complexity.average > 10) {
+    if (this.metrics.complexity.average > HIGH_AVERAGE_COMPLEXITY) {
       console.log('• Reduce test complexity by extracting helper methods')
     }
 
