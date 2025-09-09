@@ -57,6 +57,16 @@ else
 fi
 
 echo ""
+echo "🔍 Checking test quality..."
+if ./scripts/test-quality-check.sh; then
+    print_status 0 "Test quality check passed"
+else
+    print_status 1 "Test quality check failed"
+    echo -e "${YELLOW}💡 Review test naming and structure for improvements${NC}"
+    exit 1
+fi
+
+echo ""
 echo "🏗️  Testing production build..."
 if npm run build; then
     print_status 0 "Build successful"

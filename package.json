@@ -25,7 +25,7 @@
     "test:mutation:critical": "stryker run --mutate 'src/composables/models/**/*.js,src/composables/managers/**/*.js'",
     "test:quality": "./scripts/test-quality-check.sh",
     "test:quality:advanced": "node scripts/advanced-test-analysis.mjs",
-    "quality:check": "npm run lint && npm run format:check && npm run test:coverage",
+    "quality:check": "npm run lint && npm run format:check && npm run test:coverage && npm run test:quality",
     "quality:local": "./scripts/quality-check.sh",
     "prepare": "husky"
   },

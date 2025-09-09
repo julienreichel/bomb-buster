@@ -36,6 +36,7 @@ export default defineConfig({
         'src/router/**',
         'src/pages/**',
         'src/layouts/**',
+        'scripts/**',
       ],
       // Enforce 80% coverage threshold
       thresholds: {
