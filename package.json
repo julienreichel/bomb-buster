@@ -21,6 +21,10 @@
     "test-ui": "vitest --ui",
     "coverage": "vitest run --coverage",
     "test:browser": "vitest",
+    "test:mutation": "stryker run",
+    "test:mutation:critical": "stryker run --mutate 'src/composables/models/**/*.js,src/composables/managers/**/*.js'",
+    "test:quality": "./scripts/test-quality-check.sh",
+    "test:quality:advanced": "node scripts/advanced-test-analysis.mjs",
     "quality:check": "npm run lint && npm run format:check && npm run test:coverage",
     "quality:local": "./scripts/quality-check.sh",
     "prepare": "husky"
@@ -34,6 +38,9 @@
   "devDependencies": {
     "@eslint/js": "^9.14.0",
     "@quasar/app-vite": "^2.3.0",
+    "@stryker-mutator/core": "^9.1.1",
+    "@stryker-mutator/javascript-mutator": "^4.0.0",
+    "@stryker-mutator/vitest-runner": "^9.1.1",
     "@vitejs/plugin-vue": "^6.0.1",
     "@vitest/browser": "^3.2.4",
     "@vitest/coverage-v8": "^3.2.4",
